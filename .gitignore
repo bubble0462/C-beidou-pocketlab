@@ -4,3 +4,6 @@ obj/
 *.pdb
 *.cache
 review_screenshots/
+debug_layout.txt
+ScreenshotTool.cs
+screenshot.ps1
