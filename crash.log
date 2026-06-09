@@ -1,0 +1,12 @@
+System.NullReferenceException: 未将对象引用设置到对象的实例。
+   在 DeepSeaAquacultureTerminal.MainForm.DoLayout()
+   在 System.Windows.Forms.Control.OnSizeChanged(EventArgs e)
+   在 System.Windows.Forms.Control.UpdateBounds(Int32 x, Int32 y, Int32 width, Int32 height, Int32 clientWidth, Int32 clientHeight)
+   在 System.Windows.Forms.Control.UpdateBounds(Int32 x, Int32 y, Int32 width, Int32 height)
+   在 System.Windows.Forms.Control.SetBoundsCore(Int32 x, Int32 y, Int32 width, Int32 height, BoundsSpecified specified)
+   在 System.Windows.Forms.Form.SetBoundsCore(Int32 x, Int32 y, Int32 width, Int32 height, BoundsSpecified specified)
+   在 System.Windows.Forms.Control.SetBounds(Int32 x, Int32 y, Int32 width, Int32 height, BoundsSpecified specified)
+   在 System.Windows.Forms.Control.set_Size(Size value)
+   在 DeepSeaAquacultureTerminal.MainForm.InitializeForm()
+   在 DeepSeaAquacultureTerminal.MainForm..ctor()
+   在 DeepSeaAquacultureTerminal.Program.Main()

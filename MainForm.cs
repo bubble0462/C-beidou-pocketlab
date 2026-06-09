@@ -12,7 +12,7 @@ namespace DeepSeaAquacultureTerminal
         private const int RIGHT_W = 248;
 
         private Panel _topBar;
-        private Panel _bodyPanel;
+        private Panel _topRightArea;
         private Panel _leftNav;
         private Panel _mainContent;
         private Panel _rightPanel;
@@ -29,6 +29,7 @@ namespace DeepSeaAquacultureTerminal
         private Label _toastLabel;
         private Timer _toastTimer;
 
+        private bool _initialized = false;
         private int _activeModule = 0;
 
         private readonly string[] _moduleNames = new string[]
@@ -41,23 +42,12 @@ namespace DeepSeaAquacultureTerminal
         public MainForm()
         {
             InitializeForm();
-            BuildTopBar();
-            BuildBody();
-            BuildToast();
+            CreateControls();
             StartClock();
+            CreateToast();
+            _initialized = true;
+            DoLayout();
             SwitchModule(0);
-
-            // 调试输出（提交时移除）
-            this.Shown += (s, e) =>
-            {
-                System.IO.File.WriteAllText("debug_layout.txt",
-                    "Form ClientSize: " + this.ClientSize + "\r\n" +
-                    "TopBar: " + _topBar.Bounds + "\r\n" +
-                    "BodyPanel: " + _bodyPanel.Bounds + "\r\n" +
-                    "LeftNav: " + _leftNav.Bounds + "\r\n" +
-                    "RightPanel: " + _rightPanel.Bounds + "\r\n" +
-                    "MainContent: " + _mainContent.Bounds + "\r\n");
-            };
         }
 
         private void InitializeForm()
@@ -71,22 +61,19 @@ namespace DeepSeaAquacultureTerminal
         }
 
         // ============================================================
-        // 顶部栏: 内部用 Dock.Right + Dock.Fill 两个子面板
+        // 创建所有控件 - 不设 Dock，全部由 DoLayout 定位
         // ============================================================
-        private void BuildTopBar()
+        private void CreateControls()
         {
+            // --- 顶部栏 ---
             _topBar = new Panel();
-            _topBar.Dock = DockStyle.Top;
-            _topBar.Height = TOPBAR_H;
             _topBar.BackColor = AppTheme.PrimaryDark;
             this.Controls.Add(_topBar);
 
-            // 右侧状态区 - 先加, Dock.Right 先占位
-            var rightArea = new Panel();
-            rightArea.Dock = DockStyle.Right;
-            rightArea.Width = 290;
-            rightArea.BackColor = AppTheme.PrimaryDark;
-            _topBar.Controls.Add(rightArea);
+            // 顶部栏内：右侧状态区（手动定位，不用 Dock）
+            _topRightArea = new Panel();
+            _topRightArea.BackColor = AppTheme.PrimaryDark;
+            _topBar.Controls.Add(_topRightArea);
 
             _lblBeiDouTime = new Label();
             _lblBeiDouTime.Text = "北斗授时: " + DemoData.GetBeiDouTime();
@@ -94,7 +81,7 @@ namespace DeepSeaAquacultureTerminal
             _lblBeiDouTime.Font = AppTheme.DataFont;
             _lblBeiDouTime.Location = new Point(4, 4);
             _lblBeiDouTime.AutoSize = true;
-            rightArea.Controls.Add(_lblBeiDouTime);
+            _topRightArea.Controls.Add(_lblBeiDouTime);
 
             _lblStatusLine = new Label();
             _lblStatusLine.Text = "● 系统在线 | 传感器: 24/24 | 北斗信号: 正常";
@@ -102,71 +89,86 @@ namespace DeepSeaAquacultureTerminal
             _lblStatusLine.Font = AppTheme.SmallFont;
             _lblStatusLine.Location = new Point(4, 24);
             _lblStatusLine.AutoSize = true;
-            rightArea.Controls.Add(_lblStatusLine);
+            _topRightArea.Controls.Add(_lblStatusLine);
 
-            // 左侧标题区 - 后加, Dock.Fill 填剩余
-            var leftArea = new Panel();
-            leftArea.Dock = DockStyle.Fill;
-            leftArea.BackColor = AppTheme.PrimaryDark;
-            _topBar.Controls.Add(leftArea);
-
+            // 顶部栏内：左侧标题
             var lblTitle = new Label();
             lblTitle.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
             lblTitle.ForeColor = AppTheme.TextPrimary;
             lblTitle.Font = new Font("微软雅黑", 13F, FontStyle.Bold);
-            lblTitle.Location = new Point(12, 12);
+            lblTitle.Location = new Point(16, 12);
             lblTitle.AutoSize = true;
-            leftArea.Controls.Add(lblTitle);
+            _topBar.Controls.Add(lblTitle);
 
-            // 底部分割线
-            var line = new Panel();
-            line.Dock = DockStyle.Bottom;
-            line.Height = 2;
-            line.BackColor = AppTheme.PrimaryBlue;
-            _topBar.Controls.Add(line);
-        }
+            // 顶部栏底部分割线
+            var topLine = new Panel();
+            topLine.BackColor = AppTheme.PrimaryBlue;
+            topLine.Location = new Point(0, TOPBAR_H - 2);
+            topLine.Size = new Size(2000, 2);
+            _topBar.Controls.Add(topLine);
 
-        // ============================================================
-        // 主体区: BodyPanel(Dock=Fill) 包含三栏
-        //   添加顺序: LeftNav(Dock=Left) → RightPanel(Dock=Right) → MainContent(Dock=Fill)
-        // ============================================================
-        private void BuildBody()
-        {
-            _bodyPanel = new Panel();
-            _bodyPanel.Dock = DockStyle.Fill;
-            _bodyPanel.BackColor = AppTheme.BackgroundDark;
-            this.Controls.Add(_bodyPanel);
+            // --- 左侧导航 ---
+            _leftNav = new Panel();
+            _leftNav.BackColor = AppTheme.BackgroundPanel;
+            this.Controls.Add(_leftNav);
+            BuildLeftNav();
 
-            // 关键: WinForms Dock 引擎按 Z-order 高→低 处理
-            // Dock.Fill 必须是 Z-order 最低(index 0)才能只填充剩余空间
-            // 否则 Fill 控件先处理会占满全部，遮挡 Left/Right
-
-            // 1) 主内容 - 先加(index 最低, Z-order 最后处理)
-            _mainContent = new Panel();
-            _mainContent.Dock = DockStyle.Fill;
-            _mainContent.BackColor = AppTheme.BackgroundDark;
-            _mainContent.AutoScroll = true;
-            _bodyPanel.Controls.Add(_mainContent);
-
-            // 2) 右侧详情 - 第二加(中间 Z-order)
+            // --- 右侧面板 ---
             _rightPanel = new Panel();
-            _rightPanel.Dock = DockStyle.Right;
-            _rightPanel.Width = RIGHT_W;
             _rightPanel.BackColor = AppTheme.BackgroundPanel;
-            _bodyPanel.Controls.Add(_rightPanel);
-
+            this.Controls.Add(_rightPanel);
             BuildRightPanel();
 
-            // 3) 左侧导航 - 最后加(Z-order 最高, 最先处理)
-            _leftNav = new Panel();
-            _leftNav.Dock = DockStyle.Left;
-            _leftNav.Width = NAV_W;
-            _leftNav.BackColor = AppTheme.BackgroundPanel;
-            _bodyPanel.Controls.Add(_leftNav);
-
-            BuildLeftNav();
+            // --- 主内容区 ---
+            _mainContent = new Panel();
+            _mainContent.BackColor = AppTheme.BackgroundDark;
+            _mainContent.AutoScroll = true;
+            this.Controls.Add(_mainContent);
         }
 
+        /// <summary>
+        /// 绝对布局 - 所有面板用 SetBounds 定位，不依赖任何 Dock
+        /// </summary>
+        private void DoLayout()
+        {
+            int cw = this.ClientSize.Width;
+            int ch = this.ClientSize.Height;
+
+            // 顶部栏
+            _topBar.SetBounds(0, 0, cw, TOPBAR_H);
+
+            // 顶部右侧状态区
+            _topRightArea.SetBounds(cw - 290, 0, 290, TOPBAR_H);
+
+            // 主体高度
+            int bodyY = TOPBAR_H;
+            int bodyH = ch - TOPBAR_H;
+
+            // 左侧导航
+            _leftNav.SetBounds(0, bodyY, NAV_W, bodyH);
+
+            // 右侧面板
+            _rightPanel.SetBounds(cw - RIGHT_W, bodyY, RIGHT_W, bodyH);
+
+            // 主内容区
+            int mainX = NAV_W;
+            int mainW = cw - NAV_W - RIGHT_W;
+            if (mainW < 200) mainW = 200;
+            _mainContent.SetBounds(mainX, bodyY, mainW, bodyH);
+
+            // 版本号
+            _lblVersion.Location = new Point(14, _leftNav.Height - 22);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (_initialized) DoLayout();
+        }
+
+        // ============================================================
+        // 左侧导航内容
+        // ============================================================
         private void BuildLeftNav()
         {
             var lblNav = new Label();
@@ -182,12 +184,6 @@ namespace DeepSeaAquacultureTerminal
             sep.Size = new Size(160, 1);
             sep.BackColor = AppTheme.BorderColor;
             _leftNav.Controls.Add(sep);
-
-            var rightLine = new Panel();
-            rightLine.Dock = DockStyle.Right;
-            rightLine.Width = 1;
-            rightLine.BackColor = AppTheme.BorderColor;
-            _leftNav.Controls.Add(rightLine);
 
             _navButtons = new Button[10];
             for (int i = 0; i < 10; i++)
@@ -211,44 +207,53 @@ namespace DeepSeaAquacultureTerminal
                 _navButtons[i] = btn;
             }
 
+            // 右边框线
+            var rightLine = new Panel();
+            rightLine.BackColor = AppTheme.BorderColor;
+            rightLine.Location = new Point(NAV_W - 1, 0);
+            rightLine.Size = new Size(1, 2000);
+            _leftNav.Controls.Add(rightLine);
+
             _lblVersion = new Label();
             _lblVersion.Text = "V1.0 | 北斗时空数据平台";
             _lblVersion.ForeColor = AppTheme.TextMuted;
             _lblVersion.Font = new Font("微软雅黑", 7F);
             _lblVersion.AutoSize = true;
             _leftNav.Controls.Add(_lblVersion);
-            _leftNav.SizeChanged += (s, e) => _lblVersion.Location = new Point(14, _leftNav.Height - 22);
         }
 
+        // ============================================================
+        // 右侧面板内容
+        // ============================================================
         private void BuildRightPanel()
         {
+            // 左边框线
             var leftLine = new Panel();
-            leftLine.Dock = DockStyle.Left;
-            leftLine.Width = 1;
             leftLine.BackColor = AppTheme.BorderColor;
+            leftLine.Location = new Point(0, 0);
+            leftLine.Size = new Size(1, 2000);
             _rightPanel.Controls.Add(leftLine);
 
             _lblCurrentModule = new Label();
             _lblCurrentModule.Text = "养殖池整体监控";
             _lblCurrentModule.ForeColor = AppTheme.AccentCyan;
             _lblCurrentModule.Font = AppTheme.HeaderFont;
-            _lblCurrentModule.Location = new Point(8, 8);
+            _lblCurrentModule.Location = new Point(10, 8);
             _lblCurrentModule.AutoSize = true;
             _rightPanel.Controls.Add(_lblCurrentModule);
 
             _rDivLine = new Panel();
-            _rDivLine.Location = new Point(8, 30);
+            _rDivLine.Location = new Point(10, 30);
             _rDivLine.Size = new Size(RIGHT_W - 18, 1);
             _rDivLine.BackColor = AppTheme.BorderColor;
             _rightPanel.Controls.Add(_rDivLine);
         }
 
-        private void BuildToast()
+        private void CreateToast()
         {
             _toastBar = new Panel();
-            _toastBar.Dock = DockStyle.Bottom;
-            _toastBar.Height = 0;
             _toastBar.BackColor = AppTheme.PrimaryBlue;
+            _toastBar.SetBounds(0, this.ClientSize.Height - 24, this.ClientSize.Width, 24);
             this.Controls.Add(_toastBar);
 
             _toastLabel = new Label();
@@ -273,6 +278,7 @@ namespace DeepSeaAquacultureTerminal
         {
             _toastLabel.Text = "  " + msg;
             _toastBar.Height = 24;
+            _toastBar.BringToFront();
             _toastTimer.Stop();
             _toastTimer.Start();
         }
@@ -291,12 +297,13 @@ namespace DeepSeaAquacultureTerminal
             _lblCurrentModule.Text = _moduleNames[index];
 
             _mainContent.Controls.Clear();
+
+            // 清空右侧，保留边框线和标题/分割线
             _rightPanel.Controls.Clear();
-            // 重建右侧固定控件
             var leftLine = new Panel();
-            leftLine.Dock = DockStyle.Left;
-            leftLine.Width = 1;
             leftLine.BackColor = AppTheme.BorderColor;
+            leftLine.Location = new Point(0, 0);
+            leftLine.Size = new Size(1, 2000);
             _rightPanel.Controls.Add(leftLine);
             _rightPanel.Controls.Add(_lblCurrentModule);
             _rightPanel.Controls.Add(_rDivLine);
@@ -318,8 +325,8 @@ namespace DeepSeaAquacultureTerminal
                 _mainContent.ScrollControlIntoView(_mainContent.Controls[0]);
         }
 
-        /// <summary>主内容区实际可用宽度</summary>
-        private int CW { get { return Math.Max(_mainContent.ClientSize.Width - 20, 200); } }
+        /// <summary>主内容区可用宽度</summary>
+        private int CW { get { return Math.Max(_mainContent.ClientSize.Width - 16, 200); } }
 
         // ============================================================
         // 模块 0: 养殖池整体监控
@@ -614,15 +621,14 @@ namespace DeepSeaAquacultureTerminal
             return b;
         }
 
-        /// <summary>右侧面板添加卡片 - 只计算非 Dock 面板的位置</summary>
+        /// <summary>右侧面板添加卡片 - 只跳过边框线(宽=1)和固定控件</summary>
         private void RC(string title, int height, Action<Panel> fill)
         {
             int top = 44;
             foreach (Control c in _rightPanel.Controls)
             {
-                // 跳过 Dock 面板(边框线)和固定控件(分割线/标题)
-                if (c.Dock != DockStyle.None) continue;
                 if (c == _lblCurrentModule || c == _rDivLine) continue;
+                if (c.Size.Width <= 1 || c.Size.Height <= 1) continue; // 跳过边框线
                 top = Math.Max(top, c.Location.Y + c.Height + 6);
             }
             var card = AppTheme.CreateCard(title, RIGHT_W - 16, height);
@@ -631,7 +637,6 @@ namespace DeepSeaAquacultureTerminal
             fill(card);
         }
 
-        /// <summary>添加数据行到卡片</summary>
         private void DR(Panel card, string label, string value, int y, Color? vc = null)
         {
             AppTheme.AddDataRow(card, label, value, 8, y, vc);
