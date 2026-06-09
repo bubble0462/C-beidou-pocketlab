@@ -7,18 +7,26 @@ namespace DeepSeaAquacultureTerminal
 {
     public class MainForm : Form
     {
-        // 界面元素
+        // 根布局
         private Panel _topBar;
+        private TableLayoutPanel _rootTable;
+
+        // 三栏面板
         private Panel _leftNav;
         private Panel _mainContent;
         private Panel _rightPanel;
+
+        // 顶部栏控件
         private Label _lblTitle;
         private Label _lblBeiDouTime;
         private Label _lblStatusLine;
+
+        // 右侧面板固定控件
         private Label _lblCurrentModule;
         private Panel _dividerLine;
         private Panel _rightDividerLine;
-        private Timer _timer;
+
+        // 导航
         private Button[] _navButtons;
         private Label _lblVersion;
         private int _activeModule = 0;
@@ -47,10 +55,10 @@ namespace DeepSeaAquacultureTerminal
         {
             InitializeForm();
             InitializeTopBar();
-            // WinForms Dock 顺序：先加非 Fill 的，最后加 Fill 的
-            InitializeRightPanel();
+            InitializeRootTable();
             InitializeLeftNav();
             InitializeMainContent();
+            InitializeRightPanel();
             InitializeTimer();
             InitializeToast();
             SwitchModule(0);
@@ -62,54 +70,61 @@ namespace DeepSeaAquacultureTerminal
         private void InitializeForm()
         {
             this.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
-            this.Size = new Size(1440, 900);
+            this.Size = new Size(1366, 768);
             this.MinimumSize = new Size(1024, 680);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = AppTheme.BackgroundDark;
             this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.Icon = null;
             this.DoubleBuffered = true;
         }
 
         /// <summary>
-        /// 顶部状态栏 - 右侧控件用 Anchor 跟随
+        /// 顶部状态栏 - 用 Dock Left/Right 子面板避免坐标计算
         /// </summary>
         private void InitializeTopBar()
         {
             _topBar = new Panel();
             _topBar.Dock = DockStyle.Top;
-            _topBar.Height = 56;
+            _topBar.Height = 52;
             _topBar.BackColor = AppTheme.PrimaryDark;
             this.Controls.Add(_topBar);
 
-            // 软件标题
-            _lblTitle = new Label();
-            _lblTitle.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
-            _lblTitle.ForeColor = AppTheme.TextPrimary;
-            _lblTitle.Font = new Font("微软雅黑", 14F, FontStyle.Bold);
-            _lblTitle.Location = new Point(16, 6);
-            _lblTitle.AutoSize = true;
-            _topBar.Controls.Add(_lblTitle);
+            // ---- 右侧状态区 (先加，Dock.Right 先占位) ----
+            var rightStatus = new Panel();
+            rightStatus.Dock = DockStyle.Right;
+            rightStatus.Width = 290;
+            rightStatus.BackColor = AppTheme.PrimaryDark;
+            _topBar.Controls.Add(rightStatus);
 
-            // 北斗时间 - Anchor 到右上
             _lblBeiDouTime = new Label();
             _lblBeiDouTime.Text = "北斗授时: " + DemoData.GetBeiDouTime();
             _lblBeiDouTime.ForeColor = AppTheme.AccentCyan;
             _lblBeiDouTime.Font = AppTheme.DataFont;
-            _lblBeiDouTime.Location = new Point(_topBar.Width - 280, 6);
-            _lblBeiDouTime.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblBeiDouTime.Location = new Point(8, 6);
             _lblBeiDouTime.AutoSize = true;
-            _topBar.Controls.Add(_lblBeiDouTime);
+            rightStatus.Controls.Add(_lblBeiDouTime);
 
-            // 状态指示 - Anchor 到右下
             _lblStatusLine = new Label();
             _lblStatusLine.Text = "● 系统在线 | 传感器: 24/24 | 北斗信号: 正常";
             _lblStatusLine.ForeColor = AppTheme.AccentGreen;
             _lblStatusLine.Font = AppTheme.SmallFont;
-            _lblStatusLine.Location = new Point(_topBar.Width - 280, 30);
-            _lblStatusLine.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblStatusLine.Location = new Point(8, 28);
             _lblStatusLine.AutoSize = true;
-            _topBar.Controls.Add(_lblStatusLine);
+            rightStatus.Controls.Add(_lblStatusLine);
+
+            // ---- 左侧标题区 (Fill 填满剩余) ----
+            var leftTitle = new Panel();
+            leftTitle.Dock = DockStyle.Fill;
+            leftTitle.BackColor = AppTheme.PrimaryDark;
+            _topBar.Controls.Add(leftTitle);
+
+            _lblTitle = new Label();
+            _lblTitle.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
+            _lblTitle.ForeColor = AppTheme.TextPrimary;
+            _lblTitle.Font = new Font("微软雅黑", 13F, FontStyle.Bold);
+            _lblTitle.Location = new Point(16, 12);
+            _lblTitle.AutoSize = true;
+            leftTitle.Controls.Add(_lblTitle);
 
             // 底部分割线
             var line = new Panel();
@@ -120,28 +135,50 @@ namespace DeepSeaAquacultureTerminal
         }
 
         /// <summary>
-        /// 左侧导航栏 - 收窄到 180px
+        /// 根布局：TableLayoutPanel 三列 (180px | 100% | 250px)
+        /// </summary>
+        private void InitializeRootTable()
+        {
+            _rootTable = new TableLayoutPanel();
+            _rootTable.Dock = DockStyle.Fill;
+            _rootTable.ColumnCount = 3;
+            _rootTable.RowCount = 1;
+            _rootTable.BackColor = AppTheme.BackgroundDark;
+            _rootTable.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
+
+            // 列宽：左导航固定180，右侧固定250，中间自适应
+            _rootTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180F));   // 左导航
+            _rootTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));     // 主内容
+            _rootTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250F));    // 右侧
+            _rootTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            _rootTable.Padding = new Padding(0);
+            _rootTable.Margin = new Padding(0);
+
+            this.Controls.Add(_rootTable);
+        }
+
+        /// <summary>
+        /// 左侧导航栏
         /// </summary>
         private void InitializeLeftNav()
         {
             _leftNav = new Panel();
-            _leftNav.Dock = DockStyle.Left;
-            _leftNav.Width = 180;
+            _leftNav.Dock = DockStyle.Fill;
             _leftNav.BackColor = AppTheme.BackgroundPanel;
-            this.Controls.Add(_leftNav);
+            _rootTable.Controls.Add(_leftNav, 0, 0);
 
             // 导航标题
             var lblNavTitle = new Label();
             lblNavTitle.Text = "功能模块";
             lblNavTitle.ForeColor = AppTheme.AccentCyan;
             lblNavTitle.Font = AppTheme.HeaderFont;
-            lblNavTitle.Location = new Point(14, 10);
+            lblNavTitle.Location = new Point(14, 8);
             lblNavTitle.AutoSize = true;
             _leftNav.Controls.Add(lblNavTitle);
 
             // 分割线
             var line = new Panel();
-            line.Location = new Point(10, 36);
+            line.Location = new Point(10, 32);
             line.Size = new Size(160, 1);
             line.BackColor = AppTheme.BorderColor;
             _leftNav.Controls.Add(line);
@@ -152,7 +189,7 @@ namespace DeepSeaAquacultureTerminal
             {
                 var btn = new Button();
                 btn.Text = "  " + _moduleNames[i];
-                btn.Location = new Point(0, 42 + i * 42);
+                btn.Location = new Point(0, 38 + i * 42);
                 btn.Size = new Size(180, 40);
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 0;
@@ -184,50 +221,15 @@ namespace DeepSeaAquacultureTerminal
             rightLine.BackColor = AppTheme.BorderColor;
             _leftNav.Controls.Add(rightLine);
 
-            // 首次布局：版本号定位到底部
+            // 版本号跟随高度
             _leftNav.SizeChanged += (s, e) =>
             {
-                _lblVersion.Location = new Point(14, _leftNav.Height - 26);
+                _lblVersion.Location = new Point(14, _leftNav.Height - 24);
             };
         }
 
         /// <summary>
-        /// 右侧详情/状态面板 - 收窄到 250px
-        /// </summary>
-        private void InitializeRightPanel()
-        {
-            _rightPanel = new Panel();
-            _rightPanel.Dock = DockStyle.Right;
-            _rightPanel.Width = 250;
-            _rightPanel.BackColor = AppTheme.BackgroundPanel;
-            this.Controls.Add(_rightPanel);
-
-            // 当前模块标题
-            _lblCurrentModule = new Label();
-            _lblCurrentModule.Text = "养殖池整体监控";
-            _lblCurrentModule.ForeColor = AppTheme.AccentCyan;
-            _lblCurrentModule.Font = AppTheme.HeaderFont;
-            _lblCurrentModule.Location = new Point(10, 10);
-            _lblCurrentModule.AutoSize = true;
-            _rightPanel.Controls.Add(_lblCurrentModule);
-
-            // 分割线（用字段引用以便模块切换时重定位）
-            _dividerLine = new Panel();
-            _dividerLine.Location = new Point(10, 32);
-            _dividerLine.Size = new Size(230, 1);
-            _dividerLine.BackColor = AppTheme.BorderColor;
-            _rightPanel.Controls.Add(_dividerLine);
-
-            // 左边框
-            _rightDividerLine = new Panel();
-            _rightDividerLine.Dock = DockStyle.Left;
-            _rightDividerLine.Width = 1;
-            _rightDividerLine.BackColor = AppTheme.BorderColor;
-            _rightPanel.Controls.Add(_rightDividerLine);
-        }
-
-        /// <summary>
-        /// 主内容区 - 必须最后添加，带 AutoScroll
+        /// 主内容区 - AutoScroll 允许小屏滚动
         /// </summary>
         private void InitializeMainContent()
         {
@@ -235,7 +237,41 @@ namespace DeepSeaAquacultureTerminal
             _mainContent.Dock = DockStyle.Fill;
             _mainContent.BackColor = AppTheme.BackgroundDark;
             _mainContent.AutoScroll = true;
-            this.Controls.Add(_mainContent);
+            _rootTable.Controls.Add(_mainContent, 1, 0);
+        }
+
+        /// <summary>
+        /// 右侧详情/状态面板
+        /// </summary>
+        private void InitializeRightPanel()
+        {
+            _rightPanel = new Panel();
+            _rightPanel.Dock = DockStyle.Fill;
+            _rightPanel.BackColor = AppTheme.BackgroundPanel;
+            _rootTable.Controls.Add(_rightPanel, 2, 0);
+
+            // 左边框
+            _rightDividerLine = new Panel();
+            _rightDividerLine.Dock = DockStyle.Left;
+            _rightDividerLine.Width = 1;
+            _rightDividerLine.BackColor = AppTheme.BorderColor;
+            _rightPanel.Controls.Add(_rightDividerLine);
+
+            // 当前模块标题
+            _lblCurrentModule = new Label();
+            _lblCurrentModule.Text = "养殖池整体监控";
+            _lblCurrentModule.ForeColor = AppTheme.AccentCyan;
+            _lblCurrentModule.Font = AppTheme.HeaderFont;
+            _lblCurrentModule.Location = new Point(10, 8);
+            _lblCurrentModule.AutoSize = true;
+            _rightPanel.Controls.Add(_lblCurrentModule);
+
+            // 分割线
+            _dividerLine = new Panel();
+            _dividerLine.Location = new Point(10, 30);
+            _dividerLine.Size = new Size(228, 1);
+            _dividerLine.BackColor = AppTheme.BorderColor;
+            _rightPanel.Controls.Add(_dividerLine);
         }
 
         /// <summary>
@@ -243,13 +279,13 @@ namespace DeepSeaAquacultureTerminal
         /// </summary>
         private void InitializeTimer()
         {
-            _timer = new Timer();
-            _timer.Interval = 1000;
-            _timer.Tick += (s, e) =>
+            var timer = new Timer();
+            timer.Interval = 1000;
+            timer.Tick += (s, e) =>
             {
                 _lblBeiDouTime.Text = "北斗授时: " + DemoData.GetBeiDouTime();
             };
-            _timer.Start();
+            timer.Start();
         }
 
         /// <summary>
@@ -285,7 +321,7 @@ namespace DeepSeaAquacultureTerminal
         private void ShowToast(string message)
         {
             _toastLabel.Text = "  " + message;
-            _toastBar.Height = 28;
+            _toastBar.Height = 26;
             _toastTimer.Stop();
             _toastTimer.Start();
         }
@@ -295,8 +331,7 @@ namespace DeepSeaAquacultureTerminal
         /// </summary>
         private void NavButton_Click(object sender, EventArgs e)
         {
-            var btn = (Button)sender;
-            int index = (int)btn.Tag;
+            int index = (int)((Button)sender).Tag;
             SwitchModule(index);
         }
 
@@ -317,14 +352,14 @@ namespace DeepSeaAquacultureTerminal
             _activeModule = index;
             _lblCurrentModule.Text = _moduleNames[index];
 
-            // 清空内容 - 保留固定控件
+            // 清空主内容区
             _mainContent.Controls.Clear();
 
-            // 清空右侧面板 - 保留标题、分割线和边框
+            // 清空右侧面板 - 保留边框、标题、分割线
+            var keepControls = new Control[] { _rightDividerLine, _lblCurrentModule, _dividerLine };
             _rightPanel.Controls.Clear();
-            _rightPanel.Controls.Add(_lblCurrentModule);
-            _rightPanel.Controls.Add(_dividerLine);
-            _rightPanel.Controls.Add(_rightDividerLine);
+            foreach (var c in keepControls)
+                _rightPanel.Controls.Add(c);
 
             // 加载对应模块
             switch (index)
@@ -341,19 +376,20 @@ namespace DeepSeaAquacultureTerminal
                 case 9: LoadControlSchedule(); break;
             }
 
-            _mainContent.ScrollControlIntoView(_mainContent.Controls.Count > 0
-                ? _mainContent.Controls[0] : null);
+            // 滚动到顶部
+            if (_mainContent.Controls.Count > 0)
+                _mainContent.ScrollControlIntoView(_mainContent.Controls[0]);
         }
 
-        // ============================================================
-        // 获取内容区实际可用宽度（减去 Padding 和 ScrollBar）
-        // ============================================================
-        private int ContentWidth
+        /// <summary>
+        /// 内容区实际可用宽度（ClientSize 减去 padding 和 scrollbar 余量）
+        /// </summary>
+        private int CW
         {
             get
             {
-                int w = _mainContent.ClientSize.Width - 32;
-                return w > 200 ? w : 200;
+                int w = _mainContent.ClientSize.Width - 24;
+                return w > 300 ? w : 300;
             }
         }
 
@@ -363,48 +399,42 @@ namespace DeepSeaAquacultureTerminal
         private void LoadPoolMonitor()
         {
             AddPageTitle("养殖池整体监控", "实时监测各养殖池环境参数与鱼群健康状态");
+            int cw = CW;
 
-            var cw = ContentWidth;
-
-            // 顶部统计卡片
-            var statsPanel = new Panel();
-            statsPanel.Location = new Point(16, 56);
-            statsPanel.Size = new Size(cw, 72);
-            statsPanel.BackColor = AppTheme.BackgroundDark;
-            _mainContent.Controls.Add(statsPanel);
-
-            AddStatCard(statsPanel, 0, "养殖池总数", "8", "个", AppTheme.AccentCyan);
-            AddStatCard(statsPanel, 1, "正常池", "6", "个", AppTheme.AccentGreen);
-            AddStatCard(statsPanel, 2, "关注池", "2", "个", AppTheme.AccentOrange);
-            AddStatCard(statsPanel, 3, "告警池", "0", "个", AppTheme.AccentGreen);
-            AddStatCard(statsPanel, 4, "传感器在线", "24/24", "", AppTheme.AccentCyan);
+            // 统计卡片 - 用固定5列
+            var statsPanel = CreateStatsRow(52, cw);
+            AddStatCard(statsPanel, 0, 5, "养殖池总数", "8", "个", AppTheme.AccentCyan);
+            AddStatCard(statsPanel, 1, 5, "正常池", "6", "个", AppTheme.AccentGreen);
+            AddStatCard(statsPanel, 2, 5, "关注池", "2", "个", AppTheme.AccentOrange);
+            AddStatCard(statsPanel, 3, 5, "告警池", "0", "个", AppTheme.AccentGreen);
+            AddStatCard(statsPanel, 4, 5, "传感器在线", "24/24", "", AppTheme.AccentCyan);
 
             // 数据表格
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 138);
-            dgv.Size = new Size(cw, 300);
+            dgv.Location = new Point(12, 120);
+            dgv.Size = new Size(cw, 280);
             dgv.DataSource = DemoData.GetPoolMonitorTable();
             _mainContent.Controls.Add(dgv);
 
-            // 右侧面板 - 养殖池详情
-            var detailCard = AppTheme.CreateCard("A1池详情", 228, 190);
-            detailCard.Location = new Point(10, 50);
+            // 右侧 - 养殖池详情
+            var detailCard = AppTheme.CreateCard("A1池详情", 228, 180);
+            detailCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(detailCard);
 
             AppTheme.AddDataRow(detailCard, "品种:", "大黄鱼", 12, 42);
-            AppTheme.AddDataRow(detailCard, "水温:", "23.5°C", 12, 63);
-            AppTheme.AddDataRow(detailCard, "盐度:", "32.1ppt", 12, 84);
-            AppTheme.AddDataRow(detailCard, "溶氧:", "7.2mg/L", 12, 105);
-            AppTheme.AddDataRow(detailCard, "健康评分:", "95分", 12, 126, AppTheme.AccentGreen);
-            AppTheme.AddDataRow(detailCard, "投喂状态:", "已投喂", 12, 147, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(detailCard, "水温:", "23.5°C", 12, 62);
+            AppTheme.AddDataRow(detailCard, "盐度:", "32.1ppt", 12, 82);
+            AppTheme.AddDataRow(detailCard, "溶氧:", "7.2mg/L", 12, 102);
+            AppTheme.AddDataRow(detailCard, "健康评分:", "95分", 12, 122, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(detailCard, "投喂状态:", "已投喂", 12, 142, AppTheme.AccentGreen);
 
-            var statusCard = AppTheme.CreateCard("北斗定位信息", 228, 110);
-            statusCard.Location = new Point(10, 255);
+            var statusCard = AppTheme.CreateCard("北斗定位信息", 228, 100);
+            statusCard.Location = new Point(8, 236);
             _rightPanel.Controls.Add(statusCard);
 
             AppTheme.AddDataRow(statusCard, "经度:", "118.5672°E", 12, 42);
-            AppTheme.AddDataRow(statusCard, "纬度:", "24.8765°N", 12, 63);
-            AppTheme.AddDataRow(statusCard, "授时精度:", "±20ns", 12, 84);
+            AppTheme.AddDataRow(statusCard, "纬度:", "24.8765°N", 12, 62);
+            AppTheme.AddDataRow(statusCard, "授时精度:", "±20ns", 12, 82);
         }
 
         // ============================================================
@@ -413,20 +443,19 @@ namespace DeepSeaAquacultureTerminal
         private void LoadVideoMonitor()
         {
             AddPageTitle("实时视频监控", "养殖场视频监控实时画面与云台控制");
-
-            var cw = ContentWidth;
-            int halfW = (cw - 12) / 2;
+            int cw = CW;
+            int halfW = (cw - 10) / 2;
 
             string[] cameraNames = { "A区主摄像头", "B区主摄像头", "C区主摄像头", "外海浮标摄像头" };
             for (int i = 0; i < 4; i++)
             {
                 int col = i % 2;
                 int row = i / 2;
-                var videoPanel = new Panel();
-                videoPanel.Location = new Point(16 + col * (halfW + 12), 56 + row * 240);
-                videoPanel.Size = new Size(halfW, 224);
-                videoPanel.BackColor = Color.FromArgb(10, 15, 25);
-                _mainContent.Controls.Add(videoPanel);
+                var vp = new Panel();
+                vp.Location = new Point(12 + col * (halfW + 10), 52 + row * 230);
+                vp.Size = new Size(halfW, 216);
+                vp.BackColor = Color.FromArgb(10, 15, 25);
+                _mainContent.Controls.Add(vp);
 
                 var lblCam = new Label();
                 lblCam.Text = cameraNames[i];
@@ -434,55 +463,51 @@ namespace DeepSeaAquacultureTerminal
                 lblCam.Font = AppTheme.ContentFont;
                 lblCam.Location = new Point(8, 6);
                 lblCam.AutoSize = true;
-                videoPanel.Controls.Add(lblCam);
+                vp.Controls.Add(lblCam);
 
                 var lblRec = new Label();
                 lblRec.Text = "● REC";
                 lblRec.ForeColor = AppTheme.AccentRed;
                 lblRec.Font = new Font("Consolas", 9F, FontStyle.Bold);
                 lblRec.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-                lblRec.Location = new Point(halfW - 68, 6);
+                lblRec.Location = new Point(halfW - 66, 6);
                 lblRec.AutoSize = true;
-                videoPanel.Controls.Add(lblRec);
+                vp.Controls.Add(lblRec);
 
-                var pictureBox = new PictureBox();
-                pictureBox.Location = new Point(4, 26);
-                pictureBox.Size = new Size(halfW - 8, 164);
-                pictureBox.BackColor = Color.FromArgb(8, 12, 20);
-                pictureBox.Paint += (s, e) =>
+                var pb = new PictureBox();
+                pb.Location = new Point(4, 24);
+                pb.Size = new Size(halfW - 8, 156);
+                pb.BackColor = Color.FromArgb(8, 12, 20);
+                pb.Paint += (s, e) =>
                 {
                     var g = e.Graphics;
                     using (var pen = new Pen(AppTheme.BorderColor, 1))
                     {
-                        for (int x = 0; x < pictureBox.Width; x += 40)
-                            g.DrawLine(pen, x, 0, x, pictureBox.Height);
-                        for (int y = 0; y < pictureBox.Height; y += 40)
-                            g.DrawLine(pen, 0, y, pictureBox.Width, y);
+                        for (int x = 0; x < pb.Width; x += 40) g.DrawLine(pen, x, 0, x, pb.Height);
+                        for (int y = 0; y < pb.Height; y += 40) g.DrawLine(pen, 0, y, pb.Width, y);
                     }
-                    int cx = pictureBox.Width / 2;
-                    int cy = pictureBox.Height / 2;
-                    using (var crossPen = new Pen(AppTheme.AccentCyan, 1))
+                    int cx = pb.Width / 2, cy = pb.Height / 2;
+                    using (var cp = new Pen(AppTheme.AccentCyan, 1))
                     {
-                        g.DrawLine(crossPen, cx - 20, cy, cx + 20, cy);
-                        g.DrawLine(crossPen, cx, cy - 20, cx, cy + 20);
+                        g.DrawLine(cp, cx - 20, cy, cx + 20, cy);
+                        g.DrawLine(cp, cx, cy - 20, cx, cy + 20);
                     }
-                    g.DrawString(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        AppTheme.DataFont, Brushes.Gray, 6, pictureBox.Height - 20);
+                    g.DrawString(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), AppTheme.DataFont, Brushes.Gray, 6, pb.Height - 18);
                 };
-                videoPanel.Controls.Add(pictureBox);
+                vp.Controls.Add(pb);
 
                 var lblTime = new Label();
                 lblTime.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | 1920x1080 | 25fps";
                 lblTime.ForeColor = AppTheme.TextMuted;
                 lblTime.Font = new Font("微软雅黑", 7F);
-                lblTime.Location = new Point(8, 196);
+                lblTime.Location = new Point(8, 186);
                 lblTime.AutoSize = true;
-                videoPanel.Controls.Add(lblTime);
+                vp.Controls.Add(lblTime);
             }
 
             // 右侧 - 云台控制
-            var ptzCard = AppTheme.CreateCard("云台控制", 228, 180);
-            ptzCard.Location = new Point(10, 50);
+            var ptzCard = AppTheme.CreateCard("云台控制", 228, 168);
+            ptzCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(ptzCard);
 
             string[] ptzLabels = { "↑上", "←左", "归位", "→右", "↓下", "放大", "缩小", "聚焦+" };
@@ -490,34 +515,31 @@ namespace DeepSeaAquacultureTerminal
             {
                 var btn = new Button();
                 btn.Text = ptzLabels[i];
-                btn.Size = new Size(65, 28);
-                btn.Location = new Point(14 + (i % 3) * 70, 42 + (i / 3) * 34);
+                btn.Size = new Size(62, 26);
+                btn.Location = new Point(12 + (i % 3) * 68, 40 + (i / 3) * 32);
                 btn.BackColor = AppTheme.BackgroundLight;
                 btn.ForeColor = AppTheme.TextPrimary;
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.Font = AppTheme.SmallFont;
                 btn.Cursor = Cursors.Hand;
-                btn.Click += (s, e) => ShowToast("云台指令已发送: " + btn.Text);
+                string label = ptzLabels[i];
+                btn.Click += (s, e) => ShowToast("云台指令已发送: " + label);
                 ptzCard.Controls.Add(btn);
             }
 
-            var alertCard = AppTheme.CreateCard("监控告警", 228, 120);
-            alertCard.Location = new Point(10, 245);
+            var alertCard = AppTheme.CreateCard("监控告警", 228, 108);
+            alertCard.Location = new Point(8, 224);
             _rightPanel.Controls.Add(alertCard);
 
-            string[] alerts = {
-                "● B1区 溶氧偏低 告警",
-                "● 全部摄像头在线",
-                "● 存储空间剩余: 78.2%"
-            };
-            Color[] alertColors = { AppTheme.AccentOrange, AppTheme.AccentGreen, AppTheme.TextSecondary };
+            string[] alerts = { "● B1区 溶氧偏低 告警", "● 全部摄像头在线", "● 存储空间剩余: 78.2%" };
+            Color[] aColors = { AppTheme.AccentOrange, AppTheme.AccentGreen, AppTheme.TextSecondary };
             for (int i = 0; i < alerts.Length; i++)
             {
                 var lbl = new Label();
                 lbl.Text = alerts[i];
-                lbl.ForeColor = alertColors[i];
+                lbl.ForeColor = aColors[i];
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 22);
+                lbl.Location = new Point(12, 40 + i * 22);
                 lbl.AutoSize = true;
                 alertCard.Controls.Add(lbl);
             }
@@ -529,37 +551,32 @@ namespace DeepSeaAquacultureTerminal
         private void LoadDiseaseControl()
         {
             AddPageTitle("病虫防治", "病害检测、风险评估与处理措施跟踪");
+            int cw = CW;
 
-            var cw = ContentWidth;
-
-            var statsPanel = new Panel();
-            statsPanel.Location = new Point(16, 56);
-            statsPanel.Size = new Size(cw, 64);
-            _mainContent.Controls.Add(statsPanel);
-
-            AddStatCard(statsPanel, 0, "本月检测", "156", "次", AppTheme.AccentCyan);
-            AddStatCard(statsPanel, 1, "已处理", "148", "次", AppTheme.AccentGreen);
-            AddStatCard(statsPanel, 2, "处理中", "5", "次", AppTheme.AccentOrange);
-            AddStatCard(statsPanel, 3, "高风险", "1", "项", AppTheme.AccentRed);
+            var statsPanel = CreateStatsRow(52, cw);
+            AddStatCard(statsPanel, 0, 4, "本月检测", "156", "次", AppTheme.AccentCyan);
+            AddStatCard(statsPanel, 1, 4, "已处理", "148", "次", AppTheme.AccentGreen);
+            AddStatCard(statsPanel, 2, 4, "处理中", "5", "次", AppTheme.AccentOrange);
+            AddStatCard(statsPanel, 3, 4, "高风险", "1", "项", AppTheme.AccentRed);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 130);
-            dgv.Size = new Size(cw, 300);
+            dgv.Location = new Point(12, 120);
+            dgv.Size = new Size(cw, 280);
             dgv.DataSource = DemoData.GetDiseaseControlTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var riskCard = AppTheme.CreateCard("风险统计", 228, 130);
-            riskCard.Location = new Point(10, 50);
+            var riskCard = AppTheme.CreateCard("风险统计", 228, 120);
+            riskCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(riskCard);
 
             AppTheme.AddDataRow(riskCard, "低风险:", "3项", 12, 42, AppTheme.AccentGreen);
-            AppTheme.AddDataRow(riskCard, "中风险:", "2项", 12, 63, AppTheme.AccentOrange);
-            AppTheme.AddDataRow(riskCard, "高风险:", "1项", 12, 84, AppTheme.AccentRed);
-            AppTheme.AddDataRow(riskCard, "治愈率:", "95.2%", 12, 105, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(riskCard, "中风险:", "2项", 12, 62, AppTheme.AccentOrange);
+            AppTheme.AddDataRow(riskCard, "高风险:", "1项", 12, 82, AppTheme.AccentRed);
+            AppTheme.AddDataRow(riskCard, "治愈率:", "95.2%", 12, 102, AppTheme.AccentGreen);
 
-            var guideCard = AppTheme.CreateCard("防治指南", 228, 130);
-            guideCard.Location = new Point(10, 195);
+            var guideCard = AppTheme.CreateCard("防治指南", 228, 120);
+            guideCard.Location = new Point(8, 176);
             _rightPanel.Controls.Add(guideCard);
 
             string[] tips = { "1. 定期采样检测", "2. 保持水质稳定", "3. 合理投喂密度", "4. 发现异常及时隔离" };
@@ -569,7 +586,7 @@ namespace DeepSeaAquacultureTerminal
                 lbl.Text = tips[i];
                 lbl.ForeColor = AppTheme.TextSecondary;
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 22);
+                lbl.Location = new Point(12, 40 + i * 22);
                 lbl.AutoSize = true;
                 guideCard.Controls.Add(lbl);
             }
@@ -581,44 +598,39 @@ namespace DeepSeaAquacultureTerminal
         private void LoadProfitAnalysis()
         {
             AddPageTitle("利润分析", "各品种养殖成本、产出与利润率综合分析");
+            int cw = CW;
 
-            var cw = ContentWidth;
-
-            var statsPanel = new Panel();
-            statsPanel.Location = new Point(16, 56);
-            statsPanel.Size = new Size(cw, 64);
-            _mainContent.Controls.Add(statsPanel);
-
-            AddStatCard(statsPanel, 0, "总投入", "66.0", "万元", AppTheme.AccentOrange);
-            AddStatCard(statsPanel, 1, "预计产出", "98.3", "万元", AppTheme.AccentCyan);
-            AddStatCard(statsPanel, 2, "平均利润率", "49.1", "%", AppTheme.AccentGreen);
-            AddStatCard(statsPanel, 3, "最优品种", "石斑鱼", "", AppTheme.AccentGreen);
+            var statsPanel = CreateStatsRow(52, cw);
+            AddStatCard(statsPanel, 0, 4, "总投入", "66.0", "万元", AppTheme.AccentOrange);
+            AddStatCard(statsPanel, 1, 4, "预计产出", "98.3", "万元", AppTheme.AccentCyan);
+            AddStatCard(statsPanel, 2, 4, "平均利润率", "49.1", "%", AppTheme.AccentGreen);
+            AddStatCard(statsPanel, 3, 4, "最优品种", "石斑鱼", "", AppTheme.AccentGreen);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 130);
-            dgv.Size = new Size(cw, 200);
+            dgv.Location = new Point(12, 120);
+            dgv.Size = new Size(cw, 190);
             dgv.DataSource = DemoData.GetProfitTable();
             _mainContent.Controls.Add(dgv);
 
-            var profitChart = AppTheme.CreateBarChart(
+            var chart = AppTheme.CreateBarChart(
                 "月度利润趋势(万元)",
                 DemoData.GetMonthLabels(),
                 DemoData.GetMonthlyProfit(),
-                cw, 200);
-            profitChart.Location = new Point(16, 342);
-            _mainContent.Controls.Add(profitChart);
+                cw, 190);
+            chart.Location = new Point(12, 320);
+            _mainContent.Controls.Add(chart);
 
             // 右侧
-            var summaryCard = AppTheme.CreateCard("收益概览", 228, 190);
-            summaryCard.Location = new Point(10, 50);
+            var summaryCard = AppTheme.CreateCard("收益概览", 228, 178);
+            summaryCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(summaryCard);
 
             AppTheme.AddDataRow(summaryCard, "本季收入:", "98.3万", 12, 42);
-            AppTheme.AddDataRow(summaryCard, "本季成本:", "66.0万", 12, 63);
-            AppTheme.AddDataRow(summaryCard, "净利润:", "32.3万", 12, 84, AppTheme.AccentGreen);
-            AppTheme.AddDataRow(summaryCard, "同比增幅:", "+12.5%", 12, 105, AppTheme.AccentGreen);
-            AppTheme.AddDataRow(summaryCard, "最高利润率:", "60.0%", 12, 126, AppTheme.AccentCyan);
-            AppTheme.AddDataRow(summaryCard, "最低存活率:", "82.0%", 12, 147, AppTheme.AccentOrange);
+            AppTheme.AddDataRow(summaryCard, "本季成本:", "66.0万", 12, 62);
+            AppTheme.AddDataRow(summaryCard, "净利润:", "32.3万", 12, 82, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(summaryCard, "同比增幅:", "+12.5%", 12, 102, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(summaryCard, "最高利润率:", "60.0%", 12, 122, AppTheme.AccentCyan);
+            AppTheme.AddDataRow(summaryCard, "最低存活率:", "82.0%", 12, 142, AppTheme.AccentOrange);
         }
 
         // ============================================================
@@ -627,12 +639,11 @@ namespace DeepSeaAquacultureTerminal
         private void LoadStandardSetting()
         {
             AddPageTitle("标准值设定", "水质参数标准范围与告警阈值配置");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var btnPanel = new Panel();
-            btnPanel.Location = new Point(16, 54);
-            btnPanel.Size = new Size(cw, 34);
+            btnPanel.Location = new Point(12, 50);
+            btnPanel.Size = new Size(cw, 32);
             _mainContent.Controls.Add(btnPanel);
 
             var btnAdd = CreateActionButton("新增参数", AppTheme.AccentCyan);
@@ -641,29 +652,29 @@ namespace DeepSeaAquacultureTerminal
             btnPanel.Controls.Add(btnAdd);
 
             var btnEdit = CreateActionButton("编辑选中", AppTheme.PrimaryLight);
-            btnEdit.Location = new Point(100, 2);
+            btnEdit.Location = new Point(92, 2);
             btnEdit.Click += (s, e) => ShowToast("已打开编辑参数对话框");
             btnPanel.Controls.Add(btnEdit);
 
             var btnDel = CreateActionButton("删除选中", AppTheme.AccentRed);
-            btnDel.Location = new Point(200, 2);
+            btnDel.Location = new Point(184, 2);
             btnDel.Click += (s, e) => ShowToast("请确认删除选中参数");
             btnPanel.Controls.Add(btnDel);
 
             var btnExport = CreateActionButton("导出配置", AppTheme.BackgroundLight);
-            btnExport.Location = new Point(300, 2);
+            btnExport.Location = new Point(276, 2);
             btnExport.Click += (s, e) => ShowToast("配置已导出到文件");
             btnPanel.Controls.Add(btnExport);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 96);
-            dgv.Size = new Size(cw, 340);
+            dgv.Location = new Point(12, 90);
+            dgv.Size = new Size(cw, 320);
             dgv.DataSource = DemoData.GetStandardTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var alertCard = AppTheme.CreateCard("告警级别说明", 228, 190);
-            alertCard.Location = new Point(10, 50);
+            var alertCard = AppTheme.CreateCard("告警级别说明", 228, 178);
+            alertCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(alertCard);
 
             string[] alertInfo = {
@@ -680,7 +691,7 @@ namespace DeepSeaAquacultureTerminal
                 lbl.Text = alertInfo[i];
                 lbl.ForeColor = i % 2 == 0 ? AppTheme.TextPrimary : AppTheme.TextMuted;
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 22);
+                lbl.Location = new Point(12, 40 + i * 22);
                 lbl.AutoSize = true;
                 alertCard.Controls.Add(lbl);
             }
@@ -692,12 +703,11 @@ namespace DeepSeaAquacultureTerminal
         private void LoadRealtimeQuery()
         {
             AddPageTitle("数据实时查询", "传感器实时采集数据与北斗时空数据查询");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var queryPanel = new Panel();
-            queryPanel.Location = new Point(16, 54);
-            queryPanel.Size = new Size(cw, 38);
+            queryPanel.Location = new Point(12, 50);
+            queryPanel.Size = new Size(cw, 36);
             queryPanel.BackColor = AppTheme.BackgroundCard;
             _mainContent.Controls.Add(queryPanel);
 
@@ -705,15 +715,15 @@ namespace DeepSeaAquacultureTerminal
             lblPool.Text = "池号:";
             lblPool.ForeColor = AppTheme.TextSecondary;
             lblPool.Font = AppTheme.ContentFont;
-            lblPool.Location = new Point(10, 9);
+            lblPool.Location = new Point(8, 8);
             lblPool.AutoSize = true;
             queryPanel.Controls.Add(lblPool);
 
             var cbPool = new ComboBox();
             cbPool.Items.AddRange(new string[] { "全部", "A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2" });
             cbPool.SelectedIndex = 0;
-            cbPool.Location = new Point(44, 7);
-            cbPool.Size = new Size(72, 24);
+            cbPool.Location = new Point(40, 6);
+            cbPool.Size = new Size(66, 24);
             cbPool.Font = AppTheme.SmallFont;
             queryPanel.Controls.Add(cbPool);
 
@@ -721,39 +731,39 @@ namespace DeepSeaAquacultureTerminal
             lblParam.Text = "参数:";
             lblParam.ForeColor = AppTheme.TextSecondary;
             lblParam.Font = AppTheme.ContentFont;
-            lblParam.Location = new Point(130, 9);
+            lblParam.Location = new Point(120, 8);
             lblParam.AutoSize = true;
             queryPanel.Controls.Add(lblParam);
 
             var cbParam = new ComboBox();
             cbParam.Items.AddRange(new string[] { "全部", "水温", "盐度", "溶氧", "pH", "氨氮" });
             cbParam.SelectedIndex = 0;
-            cbParam.Location = new Point(164, 7);
-            cbParam.Size = new Size(72, 24);
+            cbParam.Location = new Point(152, 6);
+            cbParam.Size = new Size(66, 24);
             cbParam.Font = AppTheme.SmallFont;
             queryPanel.Controls.Add(cbParam);
 
             var btnQuery = CreateActionButton("查询", AppTheme.AccentCyan);
-            btnQuery.Location = new Point(250, 5);
-            btnQuery.Size = new Size(65, 28);
+            btnQuery.Location = new Point(230, 4);
+            btnQuery.Size = new Size(60, 26);
             btnQuery.Click += (s, e) => ShowToast("查询完成，共返回 8 条记录");
             queryPanel.Controls.Add(btnQuery);
 
             var btnRefresh = CreateActionButton("刷新", AppTheme.PrimaryLight);
-            btnRefresh.Location = new Point(325, 5);
-            btnRefresh.Size = new Size(65, 28);
+            btnRefresh.Location = new Point(298, 4);
+            btnRefresh.Size = new Size(60, 26);
             btnRefresh.Click += (s, e) => ShowToast("数据已刷新");
             queryPanel.Controls.Add(btnRefresh);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 100);
-            dgv.Size = new Size(cw, 320);
+            dgv.Location = new Point(12, 94);
+            dgv.Size = new Size(cw, 300);
             dgv.DataSource = DemoData.GetRealtimeQueryTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var sourceCard = AppTheme.CreateCard("数据来源", 228, 130);
-            sourceCard.Location = new Point(10, 50);
+            var sourceCard = AppTheme.CreateCard("数据来源", 228, 118);
+            sourceCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(sourceCard);
 
             string[] sources = { "● 北斗卫星授时定位", "● 水下传感器阵列", "● 浮标气象站", "● 水质监测探头" };
@@ -763,7 +773,7 @@ namespace DeepSeaAquacultureTerminal
                 lbl.Text = sources[i];
                 lbl.ForeColor = AppTheme.AccentGreen;
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 22);
+                lbl.Location = new Point(12, 40 + i * 22);
                 lbl.AutoSize = true;
                 sourceCard.Controls.Add(lbl);
             }
@@ -775,12 +785,11 @@ namespace DeepSeaAquacultureTerminal
         private void LoadTrendChart()
         {
             AddPageTitle("趋势图查询", "水质参数趋势分析与多维度数据对比");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var queryPanel = new Panel();
-            queryPanel.Location = new Point(16, 54);
-            queryPanel.Size = new Size(cw, 34);
+            queryPanel.Location = new Point(12, 50);
+            queryPanel.Size = new Size(cw, 30);
             queryPanel.BackColor = AppTheme.BackgroundCard;
             _mainContent.Controls.Add(queryPanel);
 
@@ -788,7 +797,7 @@ namespace DeepSeaAquacultureTerminal
             lblPool.Text = "池号: A1    日期: 2026-06-09    参数: 全部";
             lblPool.ForeColor = AppTheme.TextSecondary;
             lblPool.Font = AppTheme.ContentFont;
-            lblPool.Location = new Point(10, 8);
+            lblPool.Location = new Point(8, 6);
             lblPool.AutoSize = true;
             queryPanel.Controls.Add(lblPool);
 
@@ -796,29 +805,29 @@ namespace DeepSeaAquacultureTerminal
                 "水温趋势 (°C) - A1池",
                 DemoData.GetTrendTimeLabels(),
                 DemoData.GetTrendWaterTemp(),
-                cw, 200);
-            tempChart.Location = new Point(16, 96);
+                cw, 190);
+            tempChart.Location = new Point(12, 88);
             _mainContent.Controls.Add(tempChart);
 
             var oxygenChart = AppTheme.CreateLineChart(
                 "溶解氧趋势 (mg/L) - A1池",
                 DemoData.GetTrendTimeLabels(),
                 DemoData.GetTrendDissolvedOxygen(),
-                cw, 200);
-            oxygenChart.Location = new Point(16, 308);
+                cw, 190);
+            oxygenChart.Location = new Point(12, 290);
             _mainContent.Controls.Add(oxygenChart);
 
             // 右侧
-            var statCard = AppTheme.CreateCard("趋势统计", 228, 190);
-            statCard.Location = new Point(10, 50);
+            var statCard = AppTheme.CreateCard("趋势统计", 228, 178);
+            statCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(statCard);
 
             AppTheme.AddDataRow(statCard, "水温最高:", "24.5°C", 12, 42, AppTheme.AccentOrange);
-            AppTheme.AddDataRow(statCard, "水温最低:", "22.0°C", 12, 63, AppTheme.AccentCyan);
-            AppTheme.AddDataRow(statCard, "水温均值:", "23.26°C", 12, 84);
-            AppTheme.AddDataRow(statCard, "溶氧最高:", "7.8mg/L", 12, 105);
-            AppTheme.AddDataRow(statCard, "溶氧最低:", "6.5mg/L", 12, 126, AppTheme.AccentOrange);
-            AppTheme.AddDataRow(statCard, "趋势判断:", "正常波动", 12, 147, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(statCard, "水温最低:", "22.0°C", 12, 62, AppTheme.AccentCyan);
+            AppTheme.AddDataRow(statCard, "水温均值:", "23.26°C", 12, 82);
+            AppTheme.AddDataRow(statCard, "溶氧最高:", "7.8mg/L", 12, 102);
+            AppTheme.AddDataRow(statCard, "溶氧最低:", "6.5mg/L", 12, 122, AppTheme.AccentOrange);
+            AppTheme.AddDataRow(statCard, "趋势判断:", "正常波动", 12, 142, AppTheme.AccentGreen);
         }
 
         // ============================================================
@@ -827,12 +836,11 @@ namespace DeepSeaAquacultureTerminal
         private void LoadHistoryQuery()
         {
             AddPageTitle("历史数据查询", "历史水质监测数据查询与导出");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var queryPanel = new Panel();
-            queryPanel.Location = new Point(16, 54);
-            queryPanel.Size = new Size(cw, 38);
+            queryPanel.Location = new Point(12, 50);
+            queryPanel.Size = new Size(cw, 36);
             queryPanel.BackColor = AppTheme.BackgroundCard;
             _mainContent.Controls.Add(queryPanel);
 
@@ -840,40 +848,40 @@ namespace DeepSeaAquacultureTerminal
             lblQ.Text = "池号: A1    起始: 2026-06-08    结束: 2026-06-09";
             lblQ.ForeColor = AppTheme.TextSecondary;
             lblQ.Font = AppTheme.ContentFont;
-            lblQ.Location = new Point(10, 10);
+            lblQ.Location = new Point(8, 9);
             lblQ.AutoSize = true;
             queryPanel.Controls.Add(lblQ);
 
             var btnExport = CreateActionButton("导出Excel", AppTheme.AccentCyan);
             btnExport.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnExport.Location = new Point(cw - 170, 5);
-            btnExport.Size = new Size(78, 28);
+            btnExport.Location = new Point(cw - 156, 4);
+            btnExport.Size = new Size(72, 26);
             btnExport.Click += (s, e) => ShowToast("历史数据已导出为 Excel 文件");
             queryPanel.Controls.Add(btnExport);
 
             var btnPrint = CreateActionButton("打印报表", AppTheme.PrimaryLight);
             btnPrint.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnPrint.Location = new Point(cw - 82, 5);
-            btnPrint.Size = new Size(78, 28);
+            btnPrint.Location = new Point(cw - 76, 4);
+            btnPrint.Size = new Size(72, 26);
             btnPrint.Click += (s, e) => ShowToast("报表已发送到打印机");
             queryPanel.Controls.Add(btnPrint);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 100);
-            dgv.Size = new Size(cw, 380);
+            dgv.Location = new Point(12, 94);
+            dgv.Size = new Size(cw, 360);
             dgv.DataSource = DemoData.GetHistoryTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var summaryCard = AppTheme.CreateCard("查询统计", 228, 190);
-            summaryCard.Location = new Point(10, 50);
+            var summaryCard = AppTheme.CreateCard("查询统计", 228, 178);
+            summaryCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(summaryCard);
 
             AppTheme.AddDataRow(summaryCard, "记录总数:", "48条", 12, 42);
-            AppTheme.AddDataRow(summaryCard, "时间跨度:", "48小时", 12, 63);
-            AppTheme.AddDataRow(summaryCard, "采样间隔:", "2小时", 12, 84);
-            AppTheme.AddDataRow(summaryCard, "异常记录:", "0条", 12, 105, AppTheme.AccentGreen);
-            AppTheme.AddDataRow(summaryCard, "数据完整性:", "100%", 12, 126, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(summaryCard, "时间跨度:", "48小时", 12, 62);
+            AppTheme.AddDataRow(summaryCard, "采样间隔:", "2小时", 12, 82);
+            AppTheme.AddDataRow(summaryCard, "异常记录:", "0条", 12, 102, AppTheme.AccentGreen);
+            AppTheme.AddDataRow(summaryCard, "数据完整性:", "100%", 12, 122, AppTheme.AccentGreen);
         }
 
         // ============================================================
@@ -882,12 +890,11 @@ namespace DeepSeaAquacultureTerminal
         private void LoadControlMode()
         {
             AddPageTitle("控制形式设置", "养殖设备控制模式配置与运行状态管理");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var btnPanel = new Panel();
-            btnPanel.Location = new Point(16, 54);
-            btnPanel.Size = new Size(cw, 34);
+            btnPanel.Location = new Point(12, 50);
+            btnPanel.Size = new Size(cw, 32);
             _mainContent.Controls.Add(btnPanel);
 
             var btnBatch = CreateActionButton("批量设置", AppTheme.AccentCyan);
@@ -896,24 +903,24 @@ namespace DeepSeaAquacultureTerminal
             btnPanel.Controls.Add(btnBatch);
 
             var btnAuto = CreateActionButton("全部自动", AppTheme.AccentGreen);
-            btnAuto.Location = new Point(100, 2);
+            btnAuto.Location = new Point(92, 2);
             btnAuto.Click += (s, e) => ShowToast("已将全部设备切换为自动模式");
             btnPanel.Controls.Add(btnAuto);
 
             var btnManual = CreateActionButton("全部手动", AppTheme.AccentOrange);
-            btnManual.Location = new Point(200, 2);
+            btnManual.Location = new Point(184, 2);
             btnManual.Click += (s, e) => ShowToast("已将全部设备切换为手动模式");
             btnPanel.Controls.Add(btnManual);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 96);
-            dgv.Size = new Size(cw, 340);
+            dgv.Location = new Point(12, 90);
+            dgv.Size = new Size(cw, 320);
             dgv.DataSource = DemoData.GetControlModeTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var modeCard = AppTheme.CreateCard("控制模式说明", 228, 190);
-            modeCard.Location = new Point(10, 50);
+            var modeCard = AppTheme.CreateCard("控制模式说明", 228, 178);
+            modeCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(modeCard);
 
             string[] modes = {
@@ -935,7 +942,7 @@ namespace DeepSeaAquacultureTerminal
                 lbl.Text = modes[i];
                 lbl.ForeColor = modes[i].EndsWith(":") ? AppTheme.AccentCyan : AppTheme.TextMuted;
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 16);
+                lbl.Location = new Point(12, 40 + i * 14);
                 lbl.AutoSize = true;
                 modeCard.Controls.Add(lbl);
             }
@@ -947,38 +954,37 @@ namespace DeepSeaAquacultureTerminal
         private void LoadControlSchedule()
         {
             AddPageTitle("控制时间设置", "设备定时任务计划与执行周期管理");
-
-            var cw = ContentWidth;
+            int cw = CW;
 
             var btnPanel = new Panel();
-            btnPanel.Location = new Point(16, 54);
-            btnPanel.Size = new Size(cw, 34);
+            btnPanel.Location = new Point(12, 50);
+            btnPanel.Size = new Size(cw, 32);
             _mainContent.Controls.Add(btnPanel);
 
-            var btnNewTask = CreateActionButton("新建任务", AppTheme.AccentCyan);
-            btnNewTask.Location = new Point(0, 2);
-            btnNewTask.Click += (s, e) => ShowToast("已打开新建任务对话框");
-            btnPanel.Controls.Add(btnNewTask);
+            var btnNew = CreateActionButton("新建任务", AppTheme.AccentCyan);
+            btnNew.Location = new Point(0, 2);
+            btnNew.Click += (s, e) => ShowToast("已打开新建任务对话框");
+            btnPanel.Controls.Add(btnNew);
 
             var btnEditTask = CreateActionButton("编辑任务", AppTheme.PrimaryLight);
-            btnEditTask.Location = new Point(100, 2);
+            btnEditTask.Location = new Point(92, 2);
             btnEditTask.Click += (s, e) => ShowToast("已打开编辑任务对话框");
             btnPanel.Controls.Add(btnEditTask);
 
-            var btnEnableTask = CreateActionButton("启用/停用", AppTheme.AccentGreen);
-            btnEnableTask.Location = new Point(200, 2);
-            btnEnableTask.Click += (s, e) => ShowToast("任务状态已切换");
-            btnPanel.Controls.Add(btnEnableTask);
+            var btnToggle = CreateActionButton("启用/停用", AppTheme.AccentGreen);
+            btnToggle.Location = new Point(184, 2);
+            btnToggle.Click += (s, e) => ShowToast("任务状态已切换");
+            btnPanel.Controls.Add(btnToggle);
 
             var dgv = CreateStyledDataGridView();
-            dgv.Location = new Point(16, 96);
-            dgv.Size = new Size(cw, 340);
+            dgv.Location = new Point(12, 90);
+            dgv.Size = new Size(cw, 320);
             dgv.DataSource = DemoData.GetControlScheduleTable();
             _mainContent.Controls.Add(dgv);
 
             // 右侧
-            var todayCard = AppTheme.CreateCard("今日任务", 228, 190);
-            todayCard.Location = new Point(10, 50);
+            var todayCard = AppTheme.CreateCard("今日任务", 228, 178);
+            todayCard.Location = new Point(8, 44);
             _rightPanel.Controls.Add(todayCard);
 
             string[] todayTasks = {
@@ -996,7 +1002,7 @@ namespace DeepSeaAquacultureTerminal
                 lbl.Text = todayTasks[i];
                 lbl.ForeColor = todayTasks[i].Contains("✓") ? AppTheme.AccentGreen : AppTheme.TextSecondary;
                 lbl.Font = AppTheme.SmallFont;
-                lbl.Location = new Point(12, 42 + i * 22);
+                lbl.Location = new Point(12, 40 + i * 20);
                 lbl.AutoSize = true;
                 todayCard.Controls.Add(lbl);
             }
@@ -1006,16 +1012,13 @@ namespace DeepSeaAquacultureTerminal
         // 公共UI辅助方法
         // ============================================================
 
-        /// <summary>
-        /// 添加页面标题和描述
-        /// </summary>
         private void AddPageTitle(string title, string description)
         {
             var lbl = new Label();
             lbl.Text = title;
             lbl.ForeColor = AppTheme.TextPrimary;
             lbl.Font = AppTheme.SubTitleFont;
-            lbl.Location = new Point(16, 6);
+            lbl.Location = new Point(12, 6);
             lbl.AutoSize = true;
             _mainContent.Controls.Add(lbl);
 
@@ -1023,28 +1026,35 @@ namespace DeepSeaAquacultureTerminal
             desc.Text = description;
             desc.ForeColor = AppTheme.TextMuted;
             desc.Font = AppTheme.SmallFont;
-            desc.Location = new Point(16, 30);
+            desc.Location = new Point(12, 28);
             desc.AutoSize = true;
             _mainContent.Controls.Add(desc);
         }
 
         /// <summary>
-        /// 创建统计卡片 - 自适应宽度
+        /// 创建统计卡片行容器
         /// </summary>
-        private void AddStatCard(Panel parent, int index, string label, string value, string unit, Color valueColor)
+        private Panel CreateStatsRow(int top, int width)
         {
-            int totalCards = 5;
-            if (parent.Controls.Count > 0 && parent.Controls.Count < 5)
-                totalCards = parent.Controls.Count;
+            var p = new Panel();
+            p.Location = new Point(12, top);
+            p.Size = new Size(width, 58);
+            _mainContent.Controls.Add(p);
+            return p;
+        }
 
-            // 根据实际父容器宽度计算
-            int gap = 6;
+        /// <summary>
+        /// 创建统计卡片 - totalCards 参数固定传入，不依赖 Controls.Count
+        /// </summary>
+        private void AddStatCard(Panel parent, int index, int totalCards, string label, string value, string unit, Color valueColor)
+        {
+            int gap = 4;
             int cardWidth = (parent.Width - gap * (totalCards + 1)) / totalCards;
-            if (cardWidth < 100) cardWidth = 100;
+            if (cardWidth < 80) cardWidth = 80;
 
             var card = new Panel();
             card.Location = new Point(gap + index * (cardWidth + gap), 0);
-            card.Size = new Size(cardWidth, 64);
+            card.Size = new Size(cardWidth, 54);
             card.BackColor = AppTheme.BackgroundCard;
             parent.Controls.Add(card);
 
@@ -1052,22 +1062,19 @@ namespace DeepSeaAquacultureTerminal
             lbl.Text = label;
             lbl.ForeColor = AppTheme.TextMuted;
             lbl.Font = AppTheme.SmallFont;
-            lbl.Location = new Point(10, 6);
+            lbl.Location = new Point(8, 4);
             lbl.AutoSize = true;
             card.Controls.Add(lbl);
 
             var val = new Label();
             val.Text = value + (string.IsNullOrEmpty(unit) ? "" : " " + unit);
             val.ForeColor = valueColor;
-            val.Font = new Font("Consolas", 13F, FontStyle.Bold);
-            val.Location = new Point(10, 28);
+            val.Font = new Font("Consolas", 12F, FontStyle.Bold);
+            val.Location = new Point(8, 24);
             val.AutoSize = true;
             card.Controls.Add(val);
         }
 
-        /// <summary>
-        /// 创建统一样式DataGridView
-        /// </summary>
         private DataGridView CreateStyledDataGridView()
         {
             var dgv = new DataGridView();
@@ -1090,14 +1097,13 @@ namespace DeepSeaAquacultureTerminal
             dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = AppTheme.PrimaryMedium;
             dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-            dgv.ColumnHeadersHeight = 30;
+            dgv.ColumnHeadersHeight = 28;
 
             dgv.DefaultCellStyle.BackColor = AppTheme.BackgroundCard;
             dgv.DefaultCellStyle.ForeColor = AppTheme.TextPrimary;
             dgv.DefaultCellStyle.Font = AppTheme.ContentFont;
             dgv.DefaultCellStyle.SelectionBackColor = AppTheme.PrimaryBlue;
             dgv.DefaultCellStyle.SelectionForeColor = AppTheme.TextPrimary;
-            dgv.DefaultCellStyle.Padding = new Padding(4, 2, 4, 2);
 
             dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(24, 42, 68);
             dgv.RowHeadersVisible = false;
@@ -1105,14 +1111,11 @@ namespace DeepSeaAquacultureTerminal
             return dgv;
         }
 
-        /// <summary>
-        /// 创建操作按钮
-        /// </summary>
         private Button CreateActionButton(string text, Color bgColor)
         {
             var btn = new Button();
             btn.Text = text;
-            btn.Size = new Size(92, 28);
+            btn.Size = new Size(84, 26);
             btn.BackColor = bgColor;
             btn.ForeColor = AppTheme.TextPrimary;
             btn.FlatStyle = FlatStyle.Flat;
