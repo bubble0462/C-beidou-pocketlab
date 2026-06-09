@@ -1,0 +1,2061 @@
+diff --git a/.ai/ACCEPTANCE.md b/.ai/ACCEPTANCE.md
+new file mode 100644
+index 0000000..dc51a26
+--- /dev/null
++++ b/.ai/ACCEPTANCE.md
+@@ -0,0 +1,32 @@
++# 验收标准
++
++## 功能验收
++
++- [ ] 程序可编译生成 `.exe`。
++- [ ] 程序启动后显示软件名称：`基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0`。
++- [ ] 左侧导航包含 10 个业务模块。
++- [ ] 每个业务模块点击后主界面内容切换。
++- [ ] 页面中体现北斗时空数据、深远海养殖、监控、分析、控制、历史追溯等业务内容。
++- [ ] 界面不是 Web 后台风格，而是 Windows 桌面终端软件风格。
++- [ ] 界面视觉足够用于说明书截图。
++
++## 代码验收
++
++- [ ] 不依赖外部 NuGet 包。
++- [ ] 可使用 Windows 自带 `csc.exe` 编译。
++- [ ] 代码结构清晰，入口、主题、数据、界面分离。
++- [ ] 不包含乱码。
++- [ ] 不包含无关模板文字。
++
++## 截图验收
++
++- [ ] 1366x768 下界面不严重遮挡。
++- [ ] 1440x900 下界面信息完整。
++- [ ] 截图中能看清模块标题、字段、状态和关键按钮。
++- [ ] 至少可生成 6 张用于软著说明书的截图。
++
++## 后续文档验收
++
++- [ ] 若插入 `软著补正2-v2` 说明书，每张截图下方应标注对应 C# 文件。
++- [ ] 说明书截图与源程序模块命名一致。
++- [ ] 不引入 Vue、HTML、Web 后台等与 C# 终端软件冲突的表达。
+diff --git a/.ai/IMPLEMENTATION.md b/.ai/IMPLEMENTATION.md
+new file mode 100644
+index 0000000..6646d37
+--- /dev/null
++++ b/.ai/IMPLEMENTATION.md
+@@ -0,0 +1,31 @@
++# 实现记录
++
++## 完成的任务
++- [x] Task 1: 搭建 C# WinForms 项目结构 — 创建了 Program.cs、MainForm.cs、AppTheme.cs、DemoData.cs、build.ps1、README.md
++- [x] Task 2: 实现主窗口框架 — 顶部状态栏(软件标题+北斗授时+系统状态)、左侧导航(10个模块按钮)、主内容区、右侧详情面板
++- [x] Task 3: 实现 10 个业务模块界面 — 养殖池整体监控、实时视频监控、病虫防治、利润分析、标准值设定、数据实时查询、趋势图查询、历史数据查询、控制形式设置、控制时间设置
++- [x] Task 4: 增强视觉质量 — 深海蓝配色方案、数据卡片、统计面板、状态标签、柱状图、折线图、统一表格样式
++- [x] Task 5: 编译与运行验证 — csc.exe 编译成功，生成 DeepSeaAquacultureTerminal.exe (38KB)
++- [x] Task 6: 后续截图准备 — README.md 中包含模块清单说明
++
++## 修改的文件
++- `Program.cs`: 程序入口，启动 MainForm
++- `MainForm.cs`: 主窗口框架 + 10个业务模块界面实现，包含数据表格、图表、卡片、导航等
++- `AppTheme.cs`: 全局主题配色方案(深海蓝风格)，提供导航按钮、卡片、图表等UI组件工厂方法
++- `DemoData.cs`: 演示数据层，提供各模块的 DataTable 数据和趋势图数据
++- `build.ps1`: PowerShell 编译脚本，使用 csc.exe 编译
++- `README.md`: 项目说明文档
++- `.gitignore`: 忽略 bin/obj 等编译输出
++
++## 测试结果
++- [x] 编译: 通过 (csc.exe 编译成功，无错误无警告)
++- [x] 运行: 待用户手动验证 (GUI 程序需在桌面环境运行)
++
++## 遇到的问题
++- PowerShell 脚本中文编码问题: build.ps1 中的中文在 Git Bash 下乱码导致解析失败，已通过 UTF-8 BOM 编码修复，同时提供直接 csc.exe 命令行编译方式
++- Git Bash 路径转换问题: csc.exe 的 /nologo /r: 参数被 Git Bash 误解析为路径，改用 powershell -Command 方式调用
++
++## 备注
++- 编译命令: `powershell -Command "& 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' /nologo /target:winexe /out:bin\DeepSeaAquacultureTerminal.exe /r:System.dll /r:System.Data.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /platform:x64 Program.cs MainForm.cs AppTheme.cs DemoData.cs"`
++- 程序为演示版本，使用模拟数据，适用于软著补正截图
++- 推荐在 1440x900 分辨率下截图
+diff --git a/.ai/PLAN.md b/.ai/PLAN.md
+new file mode 100644
+index 0000000..521a423
+--- /dev/null
++++ b/.ai/PLAN.md
+@@ -0,0 +1,64 @@
++# 技术方案
++
++## 需求概述
++
++在 `D:\Users\bubble\Desktop\bubble_test\C#基于北斗时空数据的深远海养殖辅助分析终端软件` 中实现一个好看的 C# 客户端程序，用于展示“基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0”的桌面终端界面，并可用于后续软著补正截图。
++
++## 技术方案
++
++本机当前未确认可用 .NET SDK，优先采用 Windows 自带 .NET Framework 编译器 `csc.exe` 可编译的 WinForms 客户端方案。
++
++技术路线：
++
++- 语言：C#
++- UI：Windows Forms
++- 目标运行环境：Windows 10/Windows 11
++- 编译方式：`C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe`
++- 入口文件：`Program.cs`
++- 主界面：`MainForm.cs`
++- 主题样式：`AppTheme.cs`
++- 演示数据：`DemoData.cs`
++
++界面风格：
++
++- 桌面终端软件风格，不做 Web 后台。
++- 深海蓝顶部栏 + 左侧模块导航 + 主工作区。
++- 卡片、表格、状态标签、时间线、控制按钮组合。
++- 信息密度适中，截图看起来像真实业务系统。
++
++核心页面：
++
++1. 养殖池整体监控
++2. 实时视频监控
++3. 病虫防治
++4. 利润分析
++5. 标准值设定
++6. 数据实时查询
++7. 趋势图查询
++8. 历史数据查询
++9. 控制形式设置
++10. 控制时间设置
++
++## 影响范围
++
++- 新增项目源代码文件。
++- 新增编译脚本。
++- 新增运行说明。
++- 不影响 `D:\Users\bubble\Desktop\软著（补）` 下现有补正材料，除非用户后续要求同步截图或文档。
++
++## 风险点
++
++- 风险：本机没有 .NET SDK，不能使用现代 WPF/WinUI。
++  - 缓解：使用 .NET Framework WinForms，使用系统 `csc.exe` 编译。
++
++- 风险：界面过于简单像模板。
++  - 缓解：加入北斗授时、养殖池状态、传感器指标、病虫风险、利润、控制计划等专用业务元素。
++
++- 风险：截图与软著补正2的 C# 源码模块不对应。
++  - 缓解：页面模块命名和字段与 `软著补正2-v2` 的 C# 材料保持一致。
++
++## 依赖
++
++- Windows Forms / System.Drawing / System.Windows.Forms
++- Windows 自带 .NET Framework 编译器 `csc.exe`
++- 无需外部 NuGet 包
+diff --git a/.ai/TASK.md b/.ai/TASK.md
+new file mode 100644
+index 0000000..3539ba2
+--- /dev/null
++++ b/.ai/TASK.md
+@@ -0,0 +1,79 @@
++# 任务列表
++
++## Task 1: 搭建 C# WinForms 项目结构
++
++- 目标：创建可编译的 C# 客户端项目文件。
++- 输入：当前空目录。
++- 输出：
++  - `Program.cs`
++  - `MainForm.cs`
++  - `AppTheme.cs`
++  - `DemoData.cs`
++  - `build.ps1`
++  - `README.md`
++- 影响文件：新增项目文件。
++- 预计：中等。
++
++## Task 2: 实现主窗口框架
++
++- 目标：实现专业桌面终端界面骨架。
++- 输入：软件名称、模块清单。
++- 输出：
++  - 顶部状态栏
++  - 左侧导航
++  - 主内容区
++  - 右侧详情区或状态区
++- 影响文件：`MainForm.cs`、`AppTheme.cs`。
++- 预计：中等。
++
++## Task 3: 实现 10 个业务模块界面
++
++- 目标：每个模块有独立界面和业务数据展示。
++- 输入：软著补正2功能模块。
++- 输出：
++  - 养殖池整体监控
++  - 实时视频监控
++  - 病虫防治
++  - 利润分析
++  - 标准值设定
++  - 数据实时查询
++  - 趋势图查询
++  - 历史数据查询
++  - 控制形式设置
++  - 控制时间设置
++- 影响文件：`MainForm.cs`、`DemoData.cs`。
++- 预计：复杂。
++
++## Task 4: 增强视觉质量
++
++- 目标：让界面适合软著说明书截图。
++- 输入：主界面和模块界面。
++- 输出：
++  - 统一配色
++  - 状态标签
++  - 数据卡片
++  - 表格
++  - 趋势简图
++  - 控制按钮
++- 影响文件：`MainForm.cs`、`AppTheme.cs`。
++- 预计：中等。
++
++## Task 5: 编译与运行验证
++
++- 目标：确保程序能在本机编译运行。
++- 输入：源代码。
++- 输出：
++  - `bin\DeepSeaAquacultureTerminal.exe`
++  - 编译日志
++- 影响文件：`build.ps1`、`bin` 输出目录。
++- 预计：简单。
++
++## Task 6: 后续截图准备
++
++- 目标：为软著补正2说明书截图做准备。
++- 输入：可运行客户端。
++- 输出：
++  - 建议截图清单
++  - 如用户要求，可后续生成截图并插入 `软著补正2-v2` 说明书。
++- 影响文件：可选 `screenshots` 目录。
++- 预计：简单。
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..4c166ee
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,5 @@
++bin/
++obj/
++*.exe
++*.pdb
++*.cache
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000..1bdae63
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,49 @@
++# AI Workflow Rules
++
++你是 Codex，负责规划、实现和审查本项目的 C# 客户端程序。
++
++## Planning Mode
++
++当用户要求“规划、出方案、拆任务、plantask”时：
++
++必须生成或更新：
++
++- `.ai/PLAN.md`
++- `.ai/TASK.md`
++- `.ai/ACCEPTANCE.md`
++
++要求：
++
++- 任务必须可执行、可验证。
++- 明确影响范围、风险点、验收标准。
++- 若用户后续要求实现，则按 `.ai/TASK.md` 执行，并在完成后补充实现记录。
++
++## Implementation Mode
++
++当用户明确要求“执行、实现、开始开发”时：
++
++必须：
++
++- 遵循 `.ai/PLAN.md` 的技术方案。
++- 按 `.ai/TASK.md` 分步实现。
++- 对照 `.ai/ACCEPTANCE.md` 验收。
++- 不修改无关文件。
++- 完成后输出可运行方式、生成文件、验证结果。
++
++## Review Mode
++
++当用户要求“审查、review、检查实现结果”时：
++
++必须读取：
++
++- `.ai/PLAN.md`
++- `.ai/TASK.md`
++- `.ai/ACCEPTANCE.md`
++- 当前项目文件
++
++审查重点：
++
++- 是否完成需求。
++- 是否偏离任务。
++- 是否存在界面、功能、编译或运行风险。
++- 是否可用于软著说明书截图。
+diff --git a/AppTheme.cs b/AppTheme.cs
+new file mode 100644
+index 0000000..1488495
+--- /dev/null
++++ b/AppTheme.cs
+@@ -0,0 +1,308 @@
++using System;
++using System.Drawing;
++using System.Windows.Forms;
++
++namespace DeepSeaAquacultureTerminal
++{
++    /// <summary>
++    /// 全局主题配色方案 - 深海蓝科技风格
++    /// </summary>
++    public static class AppTheme
++    {
++        // 主色调 - 深海蓝
++        public static readonly Color PrimaryDark = Color.FromArgb(10, 25, 47);
++        public static readonly Color PrimaryMedium = Color.FromArgb(15, 40, 70);
++        public static readonly Color PrimaryBlue = Color.FromArgb(30, 80, 140);
++        public static readonly Color PrimaryLight = Color.FromArgb(45, 110, 180);
++
++        // 强调色
++        public static readonly Color AccentCyan = Color.FromArgb(0, 186, 228);
++        public static readonly Color AccentGreen = Color.FromArgb(46, 204, 113);
++        public static readonly Color AccentOrange = Color.FromArgb(243, 156, 18);
++        public static readonly Color AccentRed = Color.FromArgb(231, 76, 60);
++        public static readonly Color AccentYellow = Color.FromArgb(241, 196, 15);
++
++        // 背景色
++        public static readonly Color BackgroundDark = Color.FromArgb(18, 32, 55);
++        public static readonly Color BackgroundPanel = Color.FromArgb(22, 38, 62);
++        public static readonly Color BackgroundCard = Color.FromArgb(28, 48, 75);
++        public static readonly Color BackgroundLight = Color.FromArgb(35, 58, 88);
++
++        // 文字色
++        public static readonly Color TextPrimary = Color.FromArgb(230, 240, 250);
++        public static readonly Color TextSecondary = Color.FromArgb(160, 180, 200);
++        public static readonly Color TextMuted = Color.FromArgb(100, 120, 145);
++
++        // 边框色
++        public static readonly Color BorderColor = Color.FromArgb(40, 65, 95);
++        public static readonly Color BorderHighlight = Color.FromArgb(50, 90, 135);
++
++        // 字体
++        public static readonly Font TitleFont = new Font("微软雅黑", 16F, FontStyle.Bold);
++        public static readonly Font SubTitleFont = new Font("微软雅黑", 12F, FontStyle.Bold);
++        public static readonly Font HeaderFont = new Font("微软雅黑", 11F, FontStyle.Bold);
++        public static readonly Font ContentFont = new Font("微软雅黑", 9F);
++        public static readonly Font SmallFont = new Font("微软雅黑", 8F);
++        public static readonly Font DataFont = new Font("Consolas", 10F);
++        public static readonly Font DataFontBold = new Font("Consolas", 10F, FontStyle.Bold);
++
++        /// <summary>
++        /// 创建标准侧边栏按钮
++        /// </summary>
++        public static Button CreateNavButton(string text, int index)
++        {
++            var btn = new Button();
++            btn.Text = text;
++            btn.Dock = DockStyle.Top;
++            btn.Height = 42;
++            btn.FlatStyle = FlatStyle.Flat;
++            btn.FlatAppearance.BorderSize = 0;
++            btn.FlatAppearance.MouseOverBackColor = BackgroundLight;
++            btn.BackColor = BackgroundPanel;
++            btn.ForeColor = TextSecondary;
++            btn.Font = ContentFont;
++            btn.TextAlign = ContentAlignment.MiddleLeft;
++            btn.Padding = new Padding(20, 0, 0, 0);
++            btn.Tag = index;
++            btn.Cursor = Cursors.Hand;
++            return btn;
++        }
++
++        /// <summary>
++        /// 选中导航按钮样式
++        /// </summary>
++        public static void ActivateNavButton(Button btn)
++        {
++            btn.BackColor = PrimaryBlue;
++            btn.ForeColor = TextPrimary;
++            btn.Font = new Font("微软雅黑", 9F, FontStyle.Bold);
++        }
++
++        /// <summary>
++        /// 取消选中导航按钮样式
++        /// </summary>
++        public static void DeactivateNavButton(Button btn)
++        {
++            btn.BackColor = BackgroundPanel;
++            btn.ForeColor = TextSecondary;
++            btn.Font = ContentFont;
++        }
++
++        /// <summary>
++        /// 创建数据卡片面板
++        /// </summary>
++        public static Panel CreateCard(string title, int width, int height)
++        {
++            var card = new Panel();
++            card.Size = new Size(width, height);
++            card.BackColor = BackgroundCard;
++            card.Padding = new Padding(1);
++            card.BorderStyle = BorderStyle.None;
++
++            // 标题标签
++            var lbl = new Label();
++            lbl.Text = title;
++            lbl.ForeColor = AccentCyan;
++            lbl.Font = HeaderFont;
++            lbl.Location = new Point(12, 8);
++            lbl.AutoSize = true;
++            card.Controls.Add(lbl);
++
++            // 底部分割线
++            var line = new Panel();
++            line.Height = 1;
++            line.Width = width - 24;
++            line.BackColor = BorderHighlight;
++            line.Location = new Point(12, 32);
++            card.Controls.Add(line);
++
++            return card;
++        }
++
++        /// <summary>
++        /// 创建状态标签
++        /// </summary>
++        public static Label CreateStatusLabel(string text, bool isGood)
++        {
++            var lbl = new Label();
++            lbl.Text = text;
++            lbl.ForeColor = isGood ? AccentGreen : AccentRed;
++            lbl.Font = new Font("微软雅黑", 9F, FontStyle.Bold);
++            lbl.AutoSize = true;
++            return lbl;
++        }
++
++        /// <summary>
++        /// 创建数据标签 (字段名: 值)
++        /// </summary>
++        public static void AddDataRow(Panel parent, string label, string value, int x, int y, Color? valueColor = null)
++        {
++            var lbl = new Label();
++            lbl.Text = label;
++            lbl.ForeColor = TextSecondary;
++            lbl.Font = SmallFont;
++            lbl.Location = new Point(x, y);
++            lbl.AutoSize = true;
++            parent.Controls.Add(lbl);
++
++            var val = new Label();
++            val.Text = value;
++            val.ForeColor = valueColor ?? TextPrimary;
++            val.Font = DataFont;
++            val.Location = new Point(x + 100, y - 1);
++            val.AutoSize = true;
++            parent.Controls.Add(val);
++        }
++
++        /// <summary>
++        /// 创建简易柱状图面板
++        /// </summary>
++        public static Panel CreateBarChart(string title, string[] labels, float[] values, int width, int height)
++        {
++            var chart = CreateCard(title, width, height);
++
++            if (labels == null || values == null || labels.Length == 0) return chart;
++
++            float maxVal = 0;
++            foreach (var v in values) if (v > maxVal) maxVal = v;
++            if (maxVal == 0) maxVal = 1;
++
++            int chartLeft = 50;
++            int chartTop = 50;
++            int chartWidth = width - 70;
++            int chartHeight = height - 90;
++            int barWidth = chartWidth / labels.Length - 8;
++
++            var rnd = new Random();
++
++            for (int i = 0; i < labels.Length; i++)
++            {
++                int barH = (int)(chartHeight * values[i] / maxVal);
++                if (barH < 2) barH = 2;
++
++                int bx = chartLeft + i * (barWidth + 8);
++                int by = chartTop + chartHeight - barH;
++
++                var bar = new Panel();
++                bar.Location = new Point(bx, by);
++                bar.Size = new Size(barWidth, barH);
++
++                // 根据数值给不同颜色
++                if (values[i] / maxVal > 0.7f)
++                    bar.BackColor = AccentGreen;
++                else if (values[i] / maxVal > 0.4f)
++                    bar.BackColor = AccentCyan;
++                else
++                    bar.BackColor = PrimaryLight;
++
++                chart.Controls.Add(bar);
++
++                // 标签
++                var lbl = new Label();
++                lbl.Text = labels[i];
++                lbl.ForeColor = TextMuted;
++                lbl.Font = new Font("微软雅黑", 7F);
++                lbl.Location = new Point(bx - 4, chartTop + chartHeight + 4);
++                lbl.AutoSize = true;
++                chart.Controls.Add(lbl);
++
++                // 数值
++                var valLbl = new Label();
++                valLbl.Text = values[i].ToString("F1");
++                valLbl.ForeColor = TextPrimary;
++                valLbl.Font = new Font("Consolas", 7F);
++                valLbl.Location = new Point(bx, by - 14);
++                valLbl.AutoSize = true;
++                chart.Controls.Add(valLbl);
++            }
++
++            return chart;
++        }
++
++        /// <summary>
++        /// 创建趋势折线图面板
++        /// </summary>
++        public static Panel CreateLineChart(string title, string[] labels, float[] values, int width, int height)
++        {
++            var chart = CreateCard(title, width, height);
++            if (labels == null || values == null || labels.Length < 2) return chart;
++
++            float minVal = float.MaxValue, maxVal = float.MinValue;
++            foreach (var v in values)
++            {
++                if (v < minVal) minVal = v;
++                if (v > maxVal) maxVal = v;
++            }
++            float range = maxVal - minVal;
++            if (range == 0) range = 1;
++
++            int chartLeft = 55;
++            int chartTop = 50;
++            int chartWidth = width - 75;
++            int chartHeight = height - 90;
++
++            // 计算点坐标
++            Point[] points = new Point[values.Length];
++            for (int i = 0; i < values.Length; i++)
++            {
++                int px = chartLeft + (int)(chartWidth * i / (values.Length - 1));
++                int py = chartTop + chartHeight - (int)(chartHeight * (values[i] - minVal) / range);
++                points[i] = new Point(px, py);
++            }
++
++            // 绘制折线
++            var pictureBox = new PictureBox();
++            pictureBox.Location = new Point(0, 35);
++            pictureBox.Size = new Size(width, height - 40);
++            pictureBox.BackColor = BackgroundCard;
++            pictureBox.Paint += (s, e) =>
++            {
++                var g = e.Graphics;
++                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
++
++                // 网格线
++                using (var gridPen = new Pen(BorderColor))
++                {
++                    for (int i = 0; i <= 4; i++)
++                    {
++                        int gy = chartTop - 15 + (int)((chartHeight + 30) * i / 4);
++                        g.DrawLine(gridPen, chartLeft - 5, gy, chartLeft + chartWidth + 5, gy);
++                    }
++                }
++
++                // 折线
++                if (points.Length >= 2)
++                {
++                    using (var linePen = new Pen(AccentCyan, 2))
++                    {
++                        g.DrawLines(linePen, points);
++                    }
++                }
++
++                // 数据点
++                foreach (var p in points)
++                {
++                    g.FillEllipse(new SolidBrush(AccentCyan), p.X - 4, p.Y - 4, 8, 8);
++                    g.FillEllipse(new SolidBrush(BackgroundCard), p.X - 2, p.Y - 2, 4, 4);
++                }
++            };
++            chart.Controls.Add(pictureBox);
++
++            // X轴标签
++            int step = Math.Max(1, labels.Length / 8);
++            for (int i = 0; i < labels.Length; i += step)
++            {
++                var lbl = new Label();
++                lbl.Text = labels[i];
++                lbl.ForeColor = TextMuted;
++                lbl.Font = new Font("微软雅黑", 7F);
++                int lx = chartLeft + (int)(chartWidth * i / (labels.Length - 1)) - 15;
++                lbl.Location = new Point(lx, chartTop + chartHeight + 8);
++                lbl.AutoSize = true;
++                chart.Controls.Add(lbl);
++            }
++
++            return chart;
++        }
++    }
++}
+diff --git a/DemoData.cs b/DemoData.cs
+new file mode 100644
+index 0000000..33c0a16
+--- /dev/null
++++ b/DemoData.cs
+@@ -0,0 +1,245 @@
++using System;
++using System.Data;
++
++namespace DeepSeaAquacultureTerminal
++{
++    /// <summary>
++    /// 演示数据 - 模拟深远海养殖业务数据
++    /// </summary>
++    public static class DemoData
++    {
++        // 北斗时间
++        public static string GetBeiDouTime()
++        {
++            return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " BDT";
++        }
++
++        // 养殖池数据表
++        public static DataTable GetPoolMonitorTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("池号", typeof(string));
++            dt.Columns.Add("品种", typeof(string));
++            dt.Columns.Add("水温(°C)", typeof(string));
++            dt.Columns.Add("盐度(ppt)", typeof(string));
++            dt.Columns.Add("溶氧(mg/L)", typeof(string));
++            dt.Columns.Add("pH值", typeof(string));
++            dt.Columns.Add("投喂状态", typeof(string));
++            dt.Columns.Add("健康评分", typeof(string));
++            dt.Columns.Add("状态", typeof(string));
++
++            dt.Rows.Add("A1", "大黄鱼", "23.5", "32.1", "7.2", "8.1", "已投喂", "95", "正常");
++            dt.Rows.Add("A2", "大黄鱼", "22.8", "31.8", "6.9", "8.0", "已投喂", "92", "正常");
++            dt.Rows.Add("A3", "石斑鱼", "24.1", "32.5", "7.5", "8.2", "未投喂", "98", "正常");
++            dt.Rows.Add("B1", "金鲳鱼", "25.0", "33.0", "6.5", "7.9", "已投喂", "88", "注意");
++            dt.Rows.Add("B2", "金鲳鱼", "24.6", "32.8", "7.0", "8.1", "已投喂", "91", "正常");
++            dt.Rows.Add("B3", "军曹鱼", "23.2", "31.5", "7.8", "8.3", "未投喂", "96", "正常");
++            dt.Rows.Add("C1", "鲈鱼", "22.5", "31.2", "6.3", "7.8", "已投喂", "82", "注意");
++            dt.Rows.Add("C2", "鲈鱼", "23.0", "32.0", "7.1", "8.0", "已投喂", "93", "正常");
++
++            return dt;
++        }
++
++        // 病虫防治数据表
++        public static DataTable GetDiseaseControlTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("池号", typeof(string));
++            dt.Columns.Add("检测时间", typeof(string));
++            dt.Columns.Add("病害类型", typeof(string));
++            dt.Columns.Add("风险等级", typeof(string));
++            dt.Columns.Add("处理措施", typeof(string));
++            dt.Columns.Add("负责人", typeof(string));
++            dt.Columns.Add("状态", typeof(string));
++
++            dt.Rows.Add("A1", "2026-06-09 08:30", "白点病", "低风险", "盐度调节+升温", "张工", "已处理");
++            dt.Rows.Add("B1", "2026-06-09 09:15", "车轮虫", "中风险", "淡水浴+药浴", "李工", "处理中");
++            dt.Rows.Add("C1", "2026-06-09 10:00", "肠炎", "低风险", "饲料调整+益生菌", "王工", "观察中");
++            dt.Rows.Add("A3", "2026-06-09 07:45", "弧菌感染", "高风险", "消毒隔离+抗生素", "陈工", "紧急处理");
++            dt.Rows.Add("B2", "2026-06-09 11:20", "锚头蚤", "低风险", "有机磷药浴", "张工", "已处理");
++            dt.Rows.Add("C2", "2026-06-08 16:00", "水霉病", "中风险", "食盐浸泡+升温", "李工", "恢复中");
++
++            return dt;
++        }
++
++        // 利润分析数据
++        public static DataTable GetProfitTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("品种", typeof(string));
++            dt.Columns.Add("养殖批次", typeof(string));
++            dt.Columns.Add("投入(万元)", typeof(string));
++            dt.Columns.Add("预计产出(万元)", typeof(string));
++            dt.Columns.Add("利润率(%)", typeof(string));
++            dt.Columns.Add("存活率(%)", typeof(string));
++            dt.Columns.Add("周期(月)", typeof(string));
++            dt.Columns.Add("评价", typeof(string));
++
++            dt.Rows.Add("大黄鱼", "2026-A1", "12.5", "18.8", "50.4", "96.2", "8", "优质");
++            dt.Rows.Add("石斑鱼", "2026-A3", "15.0", "24.0", "60.0", "98.1", "10", "优质");
++            dt.Rows.Add("金鲳鱼", "2026-B1", "8.5", "12.8", "50.6", "88.5", "6", "良好");
++            dt.Rows.Add("军曹鱼", "2026-B3", "20.0", "28.5", "42.5", "97.0", "12", "良好");
++            dt.Rows.Add("鲈鱼", "2026-C1", "10.0", "14.2", "42.0", "82.0", "7", "关注");
++
++            return dt;
++        }
++
++        // 标准值设定
++        public static DataTable GetStandardTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("参数名称", typeof(string));
++            dt.Columns.Add("标准下限", typeof(string));
++            dt.Columns.Add("标准上限", typeof(string));
++            dt.Columns.Add("单位", typeof(string));
++            dt.Columns.Add("适用品种", typeof(string));
++            dt.Columns.Add("告警级别", typeof(string));
++            dt.Columns.Add("更新时间", typeof(string));
++
++            dt.Rows.Add("水温", "18.0", "28.0", "°C", "通用", "二级告警", "2026-05-01");
++            dt.Rows.Add("盐度", "28.0", "35.0", "ppt", "海水鱼", "一级告警", "2026-05-01");
++            dt.Rows.Add("溶解氧", "5.0", "9.0", "mg/L", "通用", "一级告警", "2026-05-01");
++            dt.Rows.Add("pH值", "7.5", "8.5", "", "通用", "二级告警", "2026-05-01");
++            dt.Rows.Add("氨氮", "0.0", "0.5", "mg/L", "通用", "一级告警", "2026-05-01");
++            dt.Rows.Add("亚硝酸盐", "0.0", "0.1", "mg/L", "通用", "二级告警", "2026-05-01");
++            dt.Rows.Add("透明度", "30", "80", "cm", "通用", "三级告警", "2026-05-01");
++
++            return dt;
++        }
++
++        // 实时查询数据
++        public static DataTable GetRealtimeQueryTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("传感器ID", typeof(string));
++            dt.Columns.Add("池号", typeof(string));
++            dt.Columns.Add("参数", typeof(string));
++            dt.Columns.Add("当前值", typeof(string));
++            dt.Columns.Add("标准范围", typeof(string));
++            dt.Columns.Add("采样时间", typeof(string));
++            dt.Columns.Add("数据来源", typeof(string));
++            dt.Columns.Add("状态", typeof(string));
++
++            dt.Rows.Add("BD-SN-001", "A1", "水温", "23.5", "18-28°C", "2026-06-09 14:30", "北斗+传感", "正常");
++            dt.Rows.Add("BD-SN-002", "A1", "盐度", "32.1", "28-35ppt", "2026-06-09 14:30", "北斗+传感", "正常");
++            dt.Rows.Add("BD-SN-003", "A1", "溶氧", "7.2", "5-9mg/L", "2026-06-09 14:30", "北斗+传感", "正常");
++            dt.Rows.Add("BD-SN-004", "A2", "水温", "22.8", "18-28°C", "2026-06-09 14:30", "北斗+传感", "正常");
++            dt.Rows.Add("BD-SN-005", "B1", "溶氧", "4.8", "5-9mg/L", "2026-06-09 14:30", "北斗+传感", "偏低");
++            dt.Rows.Add("BD-SN-006", "C1", "pH", "7.4", "7.5-8.5", "2026-06-09 14:30", "北斗+传感", "偏低");
++            dt.Rows.Add("BD-SN-007", "A3", "氨氮", "0.12", "0-0.5mg/L", "2026-06-09 14:30", "北斗+传感", "正常");
++            dt.Rows.Add("BD-SN-008", "B3", "水温", "23.2", "18-28°C", "2026-06-09 14:30", "北斗+传感", "正常");
++
++            return dt;
++        }
++
++        // 历史数据查询
++        public static DataTable GetHistoryTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("记录时间", typeof(string));
++            dt.Columns.Add("池号", typeof(string));
++            dt.Columns.Add("水温(°C)", typeof(string));
++            dt.Columns.Add("盐度(ppt)", typeof(string));
++            dt.Columns.Add("溶氧(mg/L)", typeof(string));
++            dt.Columns.Add("pH值", typeof(string));
++            dt.Columns.Add("氨氮(mg/L)", typeof(string));
++            dt.Columns.Add("操作员", typeof(string));
++
++            dt.Rows.Add("2026-06-09 14:00", "A1", "23.5", "32.1", "7.2", "8.1", "0.10", "系统");
++            dt.Rows.Add("2026-06-09 12:00", "A1", "23.8", "32.0", "7.0", "8.1", "0.11", "系统");
++            dt.Rows.Add("2026-06-09 10:00", "A1", "24.0", "31.9", "6.8", "8.0", "0.12", "系统");
++            dt.Rows.Add("2026-06-09 08:00", "A1", "23.2", "32.2", "7.3", "8.2", "0.09", "系统");
++            dt.Rows.Add("2026-06-09 06:00", "A1", "22.5", "32.3", "7.5", "8.2", "0.08", "系统");
++            dt.Rows.Add("2026-06-08 22:00", "A1", "22.0", "32.5", "7.6", "8.3", "0.07", "系统");
++            dt.Rows.Add("2026-06-08 18:00", "A1", "23.0", "32.1", "7.1", "8.1", "0.10", "系统");
++            dt.Rows.Add("2026-06-08 14:00", "A1", "24.2", "31.8", "6.6", "8.0", "0.13", "系统");
++
++            return dt;
++        }
++
++        // 控制形式设置
++        public static DataTable GetControlModeTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("设备名称", typeof(string));
++            dt.Columns.Add("设备类型", typeof(string));
++            dt.Columns.Add("控制模式", typeof(string));
++            dt.Columns.Add("关联池号", typeof(string));
++            dt.Columns.Add("当前状态", typeof(string));
++            dt.Columns.Add("运行功率", typeof(string));
++            dt.Columns.Add("最近操作", typeof(string));
++            dt.Columns.Add("操作人", typeof(string));
++
++            dt.Rows.Add("增氧机-A1", "增氧设备", "自动", "A1,A2", "运行中", "2.2kW", "2026-06-09 13:00", "系统");
++            dt.Rows.Add("投饵机-B1", "投喂设备", "定时", "B1,B2", "待机", "0.8kW", "2026-06-09 12:00", "张工");
++            dt.Rows.Add("水泵-A区", "循环设备", "手动", "A1,A2,A3", "运行中", "3.0kW", "2026-06-09 08:00", "李工");
++            dt.Rows.Add("温控-B区", "温控设备", "自动", "B1,B2,B3", "停止", "5.0kW", "2026-06-08 22:00", "系统");
++            dt.Rows.Add("照明-全区", "照明设备", "定时", "全部", "关闭", "1.5kW", "2026-06-09 06:00", "系统");
++            dt.Rows.Add("监测浮标-01", "北斗传感器", "自动", "外海", "运行中", "0.2kW", "2026-06-09 14:30", "系统");
++
++            return dt;
++        }
++
++        // 控制时间设置
++        public static DataTable GetControlScheduleTable()
++        {
++            var dt = new DataTable();
++            dt.Columns.Add("任务名称", typeof(string));
++            dt.Columns.Add("设备", typeof(string));
++            dt.Columns.Add("开始时间", typeof(string));
++            dt.Columns.Add("结束时间", typeof(string));
++            dt.Columns.Add("周期", typeof(string));
++            dt.Columns.Add("关联池号", typeof(string));
++            dt.Columns.Add("优先级", typeof(string));
++            dt.Columns.Add("状态", typeof(string));
++
++            dt.Rows.Add("晨间投喂", "投饵机-A1", "06:30", "07:00", "每日", "A1,A2", "高", "启用");
++            dt.Rows.Add("午间投喂", "投饵机-B1", "11:30", "12:00", "每日", "B1,B2", "高", "启用");
++            dt.Rows.Add("晚间投喂", "投饵机-A1", "17:30", "18:00", "每日", "A1,A2,A3", "高", "启用");
++            dt.Rows.Add("增氧循环", "增氧机-A1", "00:00", "23:59", "每日", "A1,A2", "中", "启用");
++            dt.Rows.Add("水质采样", "监测浮标-01", "08:00", "08:30", "每4小时", "外海", "高", "启用");
++            dt.Rows.Add("数据上报", "北斗通信", "09:00", "09:15", "每日", "全部", "高", "启用");
++            dt.Rows.Add("消毒作业", "水泵-A区", "02:00", "04:00", "每周", "A1,A2,A3", "中", "启用");
++            dt.Rows.Add("夜间照明", "照明-全区", "18:00", "06:00", "每日", "全部", "低", "停用");
++
++            return dt;
++        }
++
++        // 趋势图数据
++        public static string[] GetTrendTimeLabels()
++        {
++            return new string[] { "06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00" };
++        }
++
++        public static float[] GetTrendWaterTemp()
++        {
++            return new float[] { 22.5f, 23.2f, 24.0f, 24.5f, 23.8f, 23.5f, 23.0f, 22.8f, 22.0f };
++        }
++
++        public static float[] GetTrendDissolvedOxygen()
++        {
++            return new float[] { 7.5f, 7.3f, 6.8f, 6.5f, 7.0f, 7.2f, 7.4f, 7.6f, 7.8f };
++        }
++
++        public static float[] GetTrendPH()
++        {
++            return new float[] { 8.2f, 8.1f, 8.0f, 7.9f, 8.0f, 8.1f, 8.2f, 8.3f, 8.3f };
++        }
++
++        // 月度利润趋势
++        public static string[] GetMonthLabels()
++        {
++            return new string[] { "1月", "2月", "3月", "4月", "5月", "6月" };
++        }
++
++        public static float[] GetMonthlyProfit()
++        {
++            return new float[] { 5.2f, 6.8f, 8.1f, 7.5f, 9.3f, 10.2f };
++        }
++
++        public static float[] GetMonthlyCost()
++        {
++            return new float[] { 8.0f, 7.5f, 9.0f, 8.2f, 8.8f, 9.5f };
++        }
++    }
++}
+diff --git a/MainForm.cs b/MainForm.cs
+new file mode 100644
+index 0000000..a80382f
+--- /dev/null
++++ b/MainForm.cs
+@@ -0,0 +1,1034 @@
++using System;
++using System.Data;
++using System.Drawing;
++using System.Windows.Forms;
++
++namespace DeepSeaAquacultureTerminal
++{
++    public class MainForm : Form
++    {
++        // 界面元素
++        private Panel _topBar;
++        private Panel _leftNav;
++        private Panel _mainContent;
++        private Panel _rightPanel;
++        private Label _lblTitle;
++        private Label _lblBeiDouTime;
++        private Label _lblCurrentModule;
++        private Timer _timer;
++        private Button[] _navButtons;
++        private int _activeModule = 0;
++
++        // 模块名称
++        private readonly string[] _moduleNames = new string[]
++        {
++            "养殖池整体监控",
++            "实时视频监控",
++            "病虫防治",
++            "利润分析",
++            "标准值设定",
++            "数据实时查询",
++            "趋势图查询",
++            "历史数据查询",
++            "控制形式设置",
++            "控制时间设置"
++        };
++
++        public MainForm()
++        {
++            InitializeForm();
++            InitializeTopBar();
++            InitializeLeftNav();
++            InitializeMainContent();
++            InitializeRightPanel();
++            InitializeTimer();
++            SwitchModule(0);
++        }
++
++        /// <summary>
++        /// 窗体基本设置
++        /// </summary>
++        private void InitializeForm()
++        {
++            this.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
++            this.Size = new Size(1440, 900);
++            this.MinimumSize = new Size(1200, 750);
++            this.StartPosition = FormStartPosition.CenterScreen;
++            this.BackColor = AppTheme.BackgroundDark;
++            this.FormBorderStyle = FormBorderStyle.Sizable;
++            this.Icon = null;
++            this.DoubleBuffered = true;
++        }
++
++        /// <summary>
++        /// 顶部状态栏
++        /// </summary>
++        private void InitializeTopBar()
++        {
++            _topBar = new Panel();
++            _topBar.Dock = DockStyle.Top;
++            _topBar.Height = 60;
++            _topBar.BackColor = AppTheme.PrimaryDark;
++            _topBar.Padding = new Padding(20, 0, 20, 0);
++            this.Controls.Add(_topBar);
++
++            // 软件标题
++            _lblTitle = new Label();
++            _lblTitle.Text = "基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0";
++            _lblTitle.ForeColor = AppTheme.TextPrimary;
++            _lblTitle.Font = AppTheme.TitleFont;
++            _lblTitle.Location = new Point(20, 16);
++            _lblTitle.AutoSize = true;
++            _topBar.Controls.Add(_lblTitle);
++
++            // 北斗时间
++            _lblBeiDouTime = new Label();
++            _lblBeiDouTime.Text = "北斗授时: " + DemoData.GetBeiDouTime();
++            _lblBeiDouTime.ForeColor = AppTheme.AccentCyan;
++            _lblBeiDouTime.Font = AppTheme.DataFont;
++            _lblBeiDouTime.Location = new Point(_topBar.Width - 300, 8);
++            _lblBeiDouTime.AutoSize = true;
++            _topBar.Controls.Add(_lblBeiDouTime);
++
++            // 状态指示
++            var lblStatus = new Label();
++            lblStatus.Text = "● 系统在线 | 传感器: 24/24 | 北斗信号: 正常";
++            lblStatus.ForeColor = AppTheme.AccentGreen;
++            lblStatus.Font = AppTheme.SmallFont;
++            lblStatus.Location = new Point(_topBar.Width - 300, 32);
++            lblStatus.AutoSize = true;
++            _topBar.Controls.Add(lblStatus);
++
++            // 底部分割线
++            var line = new Panel();
++            line.Dock = DockStyle.Bottom;
++            line.Height = 2;
++            line.BackColor = AppTheme.PrimaryBlue;
++            _topBar.Controls.Add(line);
++        }
++
++        /// <summary>
++        /// 左侧导航栏
++        /// </summary>
++        private void InitializeLeftNav()
++        {
++            _leftNav = new Panel();
++            _leftNav.Dock = DockStyle.Left;
++            _leftNav.Width = 200;
++            _leftNav.BackColor = AppTheme.BackgroundPanel;
++            this.Controls.Add(_leftNav);
++
++            // 导航标题
++            var lblNavTitle = new Label();
++            lblNavTitle.Text = "功能模块";
++            lblNavTitle.ForeColor = AppTheme.AccentCyan;
++            lblNavTitle.Font = AppTheme.SubTitleFont;
++            lblNavTitle.Location = new Point(16, 12);
++            lblNavTitle.AutoSize = true;
++            _leftNav.Controls.Add(lblNavTitle);
++
++            // 分割线
++            var line = new Panel();
++            line.Location = new Point(12, 42);
++            line.Size = new Size(176, 1);
++            line.BackColor = AppTheme.BorderColor;
++            _leftNav.Controls.Add(line);
++
++            // 导航按钮
++            _navButtons = new Button[10];
++            for (int i = 0; i < 10; i++)
++            {
++                var btn = AppTheme.CreateNavButton("  " + _moduleNames[i], i);
++                btn.Top = 50 + i * 44;
++                btn.Width = 200;
++                btn.Dock = DockStyle.None;
++                btn.Click += NavButton_Click;
++                _leftNav.Controls.Add(btn);
++                _navButtons[i] = btn;
++            }
++
++            // 底部版本信息
++            var lblVersion = new Label();
++            lblVersion.Text = "V1.0 | 北斗时空数据平台";
++            lblVersion.ForeColor = AppTheme.TextMuted;
++            lblVersion.Font = new Font("微软雅黑", 7F);
++            lblVersion.Location = new Point(16, _leftNav.Height - 30);
++            lblVersion.AutoSize = true;
++            _leftNav.Controls.Add(lblVersion);
++
++            // 右边框
++            var rightLine = new Panel();
++            rightLine.Dock = DockStyle.Right;
++            rightLine.Width = 1;
++            rightLine.BackColor = AppTheme.BorderColor;
++            _leftNav.Controls.Add(rightLine);
++        }
++
++        /// <summary>
++        /// 主内容区
++        /// </summary>
++        private void InitializeMainContent()
++        {
++            _mainContent = new Panel();
++            _mainContent.Dock = DockStyle.Fill;
++            _mainContent.BackColor = AppTheme.BackgroundDark;
++            _mainContent.Padding = new Padding(16);
++            this.Controls.Add(_mainContent);
++        }
++
++        /// <summary>
++        /// 右侧详情/状态面板
++        /// </summary>
++        private void InitializeRightPanel()
++        {
++            _rightPanel = new Panel();
++            _rightPanel.Dock = DockStyle.Right;
++            _rightPanel.Width = 280;
++            _rightPanel.BackColor = AppTheme.BackgroundPanel;
++            _rightPanel.Padding = new Padding(12);
++            this.Controls.Add(_rightPanel);
++
++            // 当前模块标题
++            _lblCurrentModule = new Label();
++            _lblCurrentModule.Text = "养殖池整体监控";
++            _lblCurrentModule.ForeColor = AppTheme.AccentCyan;
++            _lblCurrentModule.Font = AppTheme.HeaderFont;
++            _lblCurrentModule.Location = new Point(12, 12);
++            _lblCurrentModule.AutoSize = true;
++            _rightPanel.Controls.Add(_lblCurrentModule);
++
++            var line = new Panel();
++            line.Location = new Point(12, 36);
++            line.Size = new Size(256, 1);
++            line.BackColor = AppTheme.BorderColor;
++            _rightPanel.Controls.Add(line);
++
++            // 左边框
++            var leftLine = new Panel();
++            leftLine.Dock = DockStyle.Left;
++            leftLine.Width = 1;
++            leftLine.BackColor = AppTheme.BorderColor;
++            _rightPanel.Controls.Add(leftLine);
++        }
++
++        /// <summary>
++        /// 计时器 - 更新北斗时间
++        /// </summary>
++        private void InitializeTimer()
++        {
++            _timer = new Timer();
++            _timer.Interval = 1000;
++            _timer.Tick += (s, e) =>
++            {
++                _lblBeiDouTime.Text = "北斗授时: " + DemoData.GetBeiDouTime();
++            };
++            _timer.Start();
++        }
++
++        /// <summary>
++        /// 导航按钮点击事件
++        /// </summary>
++        private void NavButton_Click(object sender, EventArgs e)
++        {
++            var btn = (Button)sender;
++            int index = (int)btn.Tag;
++            SwitchModule(index);
++        }
++
++        /// <summary>
++        /// 切换模块
++        /// </summary>
++        private void SwitchModule(int index)
++        {
++            // 更新导航样式
++            for (int i = 0; i < _navButtons.Length; i++)
++            {
++                if (i == index)
++                    AppTheme.ActivateNavButton(_navButtons[i]);
++                else
++                    AppTheme.DeactivateNavButton(_navButtons[i]);
++            }
++
++            _activeModule = index;
++            _lblCurrentModule.Text = _moduleNames[index];
++
++            // 清空内容
++            _mainContent.Controls.Clear();
++            _rightPanel.Controls.Clear();
++            _rightPanel.Controls.Add(_lblCurrentModule);
++
++            // 加载对应模块
++            switch (index)
++            {
++                case 0: LoadPoolMonitor(); break;
++                case 1: LoadVideoMonitor(); break;
++                case 2: LoadDiseaseControl(); break;
++                case 3: LoadProfitAnalysis(); break;
++                case 4: LoadStandardSetting(); break;
++                case 5: LoadRealtimeQuery(); break;
++                case 6: LoadTrendChart(); break;
++                case 7: LoadHistoryQuery(); break;
++                case 8: LoadControlMode(); break;
++                case 9: LoadControlSchedule(); break;
++            }
++        }
++
++        // ============================================================
++        // 模块0: 养殖池整体监控
++        // ============================================================
++        private void LoadPoolMonitor()
++        {
++            // 页面标题
++            AddPageTitle("养殖池整体监控", "实时监测各养殖池环境参数与鱼群健康状态");
++
++            // 顶部统计卡片
++            var statsPanel = new Panel();
++            statsPanel.Location = new Point(16, 60);
++            statsPanel.Size = new Size(_mainContent.Width - 40, 80);
++            statsPanel.BackColor = AppTheme.BackgroundDark;
++            _mainContent.Controls.Add(statsPanel);
++
++            AddStatCard(statsPanel, 0, "养殖池总数", "8", "个", AppTheme.AccentCyan);
++            AddStatCard(statsPanel, 1, "正常池", "6", "个", AppTheme.AccentGreen);
++            AddStatCard(statsPanel, 2, "关注池", "2", "个", AppTheme.AccentOrange);
++            AddStatCard(statsPanel, 3, "告警池", "0", "个", AppTheme.AccentGreen);
++            AddStatCard(statsPanel, 4, "传感器在线", "24/24", "", AppTheme.AccentCyan);
++
++            // 数据表格
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 150);
++            dgv.Size = new Size(_mainContent.Width - 40, 320);
++            dgv.DataSource = DemoData.GetPoolMonitorTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧面板 - 养殖池详情
++            var detailCard = AppTheme.CreateCard("A1池详情", 256, 200);
++            detailCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(detailCard);
++
++            AppTheme.AddDataRow(detailCard, "品种:", "大黄鱼", 16, 45);
++            AppTheme.AddDataRow(detailCard, "水温:", "23.5°C", 16, 68);
++            AppTheme.AddDataRow(detailCard, "盐度:", "32.1ppt", 16, 91);
++            AppTheme.AddDataRow(detailCard, "溶氧:", "7.2mg/L", 16, 114);
++            AppTheme.AddDataRow(detailCard, "健康评分:", "95分", 16, 137, AppTheme.AccentGreen);
++            AppTheme.AddDataRow(detailCard, "投喂状态:", "已投喂", 16, 160, AppTheme.AccentGreen);
++
++            var statusCard = AppTheme.CreateCard("北斗定位信息", 256, 120);
++            statusCard.Location = new Point(12, 268);
++            _rightPanel.Controls.Add(statusCard);
++
++            AppTheme.AddDataRow(statusCard, "经度:", "118.5672°E", 16, 45);
++            AppTheme.AddDataRow(statusCard, "纬度:", "24.8765°N", 16, 68);
++            AppTheme.AddDataRow(statusCard, "授时精度:", "±20ns", 16, 91);
++        }
++
++        // ============================================================
++        // 模块1: 实时视频监控
++        // ============================================================
++        private void LoadVideoMonitor()
++        {
++            AddPageTitle("实时视频监控", "养殖场视频监控实时画面与云台控制");
++
++            // 视频区域模拟 - 4个监控窗口
++            string[] cameraNames = { "A区主摄像头", "B区主摄像头", "C区主摄像头", "外海浮标摄像头" };
++            for (int i = 0; i < 4; i++)
++            {
++                int col = i % 2;
++                int row = i / 2;
++                var videoPanel = new Panel();
++                videoPanel.Location = new Point(16 + col * ((_mainContent.Width - 48) / 2), 60 + row * 250);
++                videoPanel.Size = new Size((_mainContent.Width - 48) / 2, 230);
++                videoPanel.BackColor = Color.FromArgb(10, 15, 25);
++                _mainContent.Controls.Add(videoPanel);
++
++                // 摄像头名称
++                var lblCam = new Label();
++                lblCam.Text = cameraNames[i];
++                lblCam.ForeColor = AppTheme.AccentCyan;
++                lblCam.Font = AppTheme.ContentFont;
++                lblCam.Location = new Point(10, 8);
++                lblCam.AutoSize = true;
++                videoPanel.Controls.Add(lblCam);
++
++                // 录制状态
++                var lblRec = new Label();
++                lblRec.Text = "● REC";
++                lblRec.ForeColor = AppTheme.AccentRed;
++                lblRec.Font = new Font("Consolas", 9F, FontStyle.Bold);
++                lblRec.Location = new Point(videoPanel.Width - 70, 8);
++                lblRec.AutoSize = true;
++                videoPanel.Controls.Add(lblRec);
++
++                // 模拟视频画面 - 网格
++                var pictureBox = new PictureBox();
++                pictureBox.Location = new Point(5, 30);
++                pictureBox.Size = new Size(videoPanel.Width - 10, videoPanel.Height - 60);
++                pictureBox.BackColor = Color.FromArgb(8, 12, 20);
++                pictureBox.Paint += (s, e) =>
++                {
++                    var g = e.Graphics;
++                    using (var pen = new Pen(AppTheme.BorderColor, 1))
++                    {
++                        // 模拟监控网格
++                        for (int x = 0; x < pictureBox.Width; x += 40)
++                            g.DrawLine(pen, x, 0, x, pictureBox.Height);
++                        for (int y = 0; y < pictureBox.Height; y += 40)
++                            g.DrawLine(pen, 0, y, pictureBox.Width, y);
++                    }
++                    // 十字准星
++                    int cx = pictureBox.Width / 2;
++                    int cy = pictureBox.Height / 2;
++                    using (var crossPen = new Pen(AppTheme.AccentCyan, 1))
++                    {
++                        g.DrawLine(crossPen, cx - 20, cy, cx + 20, cy);
++                        g.DrawLine(crossPen, cx, cy - 20, cx, cy + 20);
++                    }
++                    // 时间戳
++                    g.DrawString(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
++                        AppTheme.DataFont, Brushes.Gray, 8, pictureBox.Height - 22);
++                };
++                videoPanel.Controls.Add(pictureBox);
++
++                // 底部时间戳
++                var lblTime = new Label();
++                lblTime.Text = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | 分辨率:1920x1080 | 帧率:25fps";
++                lblTime.ForeColor = AppTheme.TextMuted;
++                lblTime.Font = AppTheme.SmallFont;
++                lblTime.Location = new Point(10, videoPanel.Height - 22);
++                lblTime.AutoSize = true;
++                videoPanel.Controls.Add(lblTime);
++            }
++
++            // 右侧 - 云台控制
++            var ptzCard = AppTheme.CreateCard("云台控制", 256, 200);
++            ptzCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(ptzCard);
++
++            string[] ptzBtns = { "↑ 上", "← 左", "归位", "→ 右", "↓ 下", "放大", "缩小", "聚焦+" };
++            for (int i = 0; i < ptzBtns.Length; i++)
++            {
++                var btn = new Button();
++                btn.Text = ptzBtns[i];
++                btn.Size = new Size(72, 30);
++                btn.Location = new Point(16 + (i % 3) * 78, 45 + (i / 3) * 36);
++                btn.BackColor = AppTheme.BackgroundLight;
++                btn.ForeColor = AppTheme.TextPrimary;
++                btn.FlatStyle = FlatStyle.Flat;
++                btn.Font = AppTheme.SmallFont;
++                ptzCard.Controls.Add(btn);
++            }
++
++            var alertCard = AppTheme.CreateCard("监控告警", 256, 130);
++            alertCard.Location = new Point(12, 268);
++            _rightPanel.Controls.Add(alertCard);
++
++            var lblAlert1 = new Label();
++            lblAlert1.Text = "● B1区 溶氧偏低 告警";
++            lblAlert1.ForeColor = AppTheme.AccentOrange;
++            lblAlert1.Font = AppTheme.SmallFont;
++            lblAlert1.Location = new Point(16, 42);
++            lblAlert1.AutoSize = true;
++            alertCard.Controls.Add(lblAlert1);
++
++            var lblAlert2 = new Label();
++            lblAlert2.Text = "● 全部摄像头在线";
++            lblAlert2.ForeColor = AppTheme.AccentGreen;
++            lblAlert2.Font = AppTheme.SmallFont;
++            lblAlert2.Location = new Point(16, 65);
++            lblAlert2.AutoSize = true;
++            alertCard.Controls.Add(lblAlert2);
++
++            var lblAlert3 = new Label();
++            lblAlert3.Text = "● 存储空间剩余: 78.2%";
++            lblAlert3.ForeColor = AppTheme.TextSecondary;
++            lblAlert3.Font = AppTheme.SmallFont;
++            lblAlert3.Location = new Point(16, 88);
++            lblAlert3.AutoSize = true;
++            alertCard.Controls.Add(lblAlert3);
++        }
++
++        // ============================================================
++        // 模块2: 病虫防治
++        // ============================================================
++        private void LoadDiseaseControl()
++        {
++            AddPageTitle("病虫防治", "病害检测、风险评估与处理措施跟踪");
++
++            var statsPanel = new Panel();
++            statsPanel.Location = new Point(16, 60);
++            statsPanel.Size = new Size(_mainContent.Width - 40, 70);
++            _mainContent.Controls.Add(statsPanel);
++
++            AddStatCard(statsPanel, 0, "本月检测", "156", "次", AppTheme.AccentCyan);
++            AddStatCard(statsPanel, 1, "已处理", "148", "次", AppTheme.AccentGreen);
++            AddStatCard(statsPanel, 2, "处理中", "5", "次", AppTheme.AccentOrange);
++            AddStatCard(statsPanel, 3, "高风险", "1", "项", AppTheme.AccentRed);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 140);
++            dgv.Size = new Size(_mainContent.Width - 40, 320);
++            dgv.DataSource = DemoData.GetDiseaseControlTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧
++            var riskCard = AppTheme.CreateCard("风险统计", 256, 150);
++            riskCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(riskCard);
++
++            AppTheme.AddDataRow(riskCard, "低风险:", "3项", 16, 45, AppTheme.AccentGreen);
++            AppTheme.AddDataRow(riskCard, "中风险:", "2项", 16, 68, AppTheme.AccentOrange);
++            AppTheme.AddDataRow(riskCard, "高风险:", "1项", 16, 91, AppTheme.AccentRed);
++            AppTheme.AddDataRow(riskCard, "治愈率:", "95.2%", 16, 114, AppTheme.AccentGreen);
++
++            var guideCard = AppTheme.CreateCard("防治指南", 256, 150);
++            guideCard.Location = new Point(12, 218);
++            _rightPanel.Controls.Add(guideCard);
++
++            var tips = new string[] { "1. 定期采样检测", "2. 保持水质稳定", "3. 合理投喂密度", "4. 发现异常及时隔离" };
++            for (int i = 0; i < tips.Length; i++)
++            {
++                var lbl = new Label();
++                lbl.Text = tips[i];
++                lbl.ForeColor = AppTheme.TextSecondary;
++                lbl.Font = AppTheme.SmallFont;
++                lbl.Location = new Point(16, 42 + i * 22);
++                lbl.AutoSize = true;
++                guideCard.Controls.Add(lbl);
++            }
++        }
++
++        // ============================================================
++        // 模块3: 利润分析
++        // ============================================================
++        private void LoadProfitAnalysis()
++        {
++            AddPageTitle("利润分析", "各品种养殖成本、产出与利润率综合分析");
++
++            var statsPanel = new Panel();
++            statsPanel.Location = new Point(16, 60);
++            statsPanel.Size = new Size(_mainContent.Width - 40, 70);
++            _mainContent.Controls.Add(statsPanel);
++
++            AddStatCard(statsPanel, 0, "总投入", "66.0", "万元", AppTheme.AccentOrange);
++            AddStatCard(statsPanel, 1, "预计产出", "98.3", "万元", AppTheme.AccentCyan);
++            AddStatCard(statsPanel, 2, "平均利润率", "49.1", "%", AppTheme.AccentGreen);
++            AddStatCard(statsPanel, 3, "最优品种", "石斑鱼", "", AppTheme.AccentGreen);
++
++            // 利润表格
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 140);
++            dgv.Size = new Size(_mainContent.Width - 40, 220);
++            dgv.DataSource = DemoData.GetProfitTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 月度利润趋势图
++            var profitChart = AppTheme.CreateBarChart(
++                "月度利润趋势(万元)",
++                DemoData.GetMonthLabels(),
++                DemoData.GetMonthlyProfit(),
++                _mainContent.Width - 40, 220);
++            profitChart.Location = new Point(16, 375);
++            _mainContent.Controls.Add(profitChart);
++
++            // 右侧
++            var summaryCard = AppTheme.CreateCard("收益概览", 256, 200);
++            summaryCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(summaryCard);
++
++            AppTheme.AddDataRow(summaryCard, "本季收入:", "98.3万", 16, 45);
++            AppTheme.AddDataRow(summaryCard, "本季成本:", "66.0万", 16, 68);
++            AppTheme.AddDataRow(summaryCard, "净利润:", "32.3万", 16, 91, AppTheme.AccentGreen);
++            AppTheme.AddDataRow(summaryCard, "同比增幅:", "+12.5%", 16, 114, AppTheme.AccentGreen);
++            AppTheme.AddDataRow(summaryCard, "最高利润率:", "60.0%", 16, 137, AppTheme.AccentCyan);
++            AppTheme.AddDataRow(summaryCard, "最低存活率:", "82.0%", 16, 160, AppTheme.AccentOrange);
++        }
++
++        // ============================================================
++        // 模块4: 标准值设定
++        // ============================================================
++        private void LoadStandardSetting()
++        {
++            AddPageTitle("标准值设定", "水质参数标准范围与告警阈值配置");
++
++            // 操作按钮区
++            var btnPanel = new Panel();
++            btnPanel.Location = new Point(16, 58);
++            btnPanel.Size = new Size(_mainContent.Width - 40, 36);
++            _mainContent.Controls.Add(btnPanel);
++
++            var btnAdd = CreateActionButton("新增参数", AppTheme.AccentCyan);
++            btnAdd.Location = new Point(0, 2);
++            btnPanel.Controls.Add(btnAdd);
++
++            var btnEdit = CreateActionButton("编辑选中", AppTheme.PrimaryLight);
++            btnEdit.Location = new Point(110, 2);
++            btnPanel.Controls.Add(btnEdit);
++
++            var btnDel = CreateActionButton("删除选中", AppTheme.AccentRed);
++            btnDel.Location = new Point(220, 2);
++            btnPanel.Controls.Add(btnDel);
++
++            var btnExport = CreateActionButton("导出配置", AppTheme.BackgroundLight);
++            btnExport.Location = new Point(330, 2);
++            btnPanel.Controls.Add(btnExport);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 100);
++            dgv.Size = new Size(_mainContent.Width - 40, 350);
++            dgv.DataSource = DemoData.GetStandardTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧 - 告警说明
++            var alertCard = AppTheme.CreateCard("告警级别说明", 256, 200);
++            alertCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(alertCard);
++
++            var alertInfo = new string[] {
++                "一级告警: 立即处理",
++                "  → 溶氧/氨氮超标",
++                "二级告警: 密切关注",
++                "  → 水温/pH异常",
++                "三级告警: 记录提醒",
++                "  → 透明度/其他"
++            };
++            for (int i = 0; i < alertInfo.Length; i++)
++            {
++                var lbl = new Label();
++                lbl.Text = alertInfo[i];
++                lbl.ForeColor = i % 2 == 0 ? AppTheme.TextPrimary : AppTheme.TextMuted;
++                lbl.Font = AppTheme.SmallFont;
++                lbl.Location = new Point(16, 42 + i * 22);
++                lbl.AutoSize = true;
++                alertCard.Controls.Add(lbl);
++            }
++        }
++
++        // ============================================================
++        // 模块5: 数据实时查询
++        // ============================================================
++        private void LoadRealtimeQuery()
++        {
++            AddPageTitle("数据实时查询", "传感器实时采集数据与北斗时空数据查询");
++
++            // 查询条件区
++            var queryPanel = new Panel();
++            queryPanel.Location = new Point(16, 58);
++            queryPanel.Size = new Size(_mainContent.Width - 40, 40);
++            queryPanel.BackColor = AppTheme.BackgroundCard;
++            _mainContent.Controls.Add(queryPanel);
++
++            var lblPool = new Label();
++            lblPool.Text = "池号:";
++            lblPool.ForeColor = AppTheme.TextSecondary;
++            lblPool.Font = AppTheme.ContentFont;
++            lblPool.Location = new Point(12, 10);
++            lblPool.AutoSize = true;
++            queryPanel.Controls.Add(lblPool);
++
++            var cbPool = new ComboBox();
++            cbPool.Items.AddRange(new string[] { "全部", "A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2" });
++            cbPool.SelectedIndex = 0;
++            cbPool.Location = new Point(52, 8);
++            cbPool.Size = new Size(80, 24);
++            cbPool.BackColor = AppTheme.BackgroundLight;
++            cbPool.ForeColor = AppTheme.TextPrimary;
++            cbPool.Font = AppTheme.SmallFont;
++            queryPanel.Controls.Add(cbPool);
++
++            var lblParam = new Label();
++            lblParam.Text = "参数:";
++            lblParam.ForeColor = AppTheme.TextSecondary;
++            lblParam.Font = AppTheme.ContentFont;
++            lblParam.Location = new Point(150, 10);
++            lblParam.AutoSize = true;
++            queryPanel.Controls.Add(lblParam);
++
++            var cbParam = new ComboBox();
++            cbParam.Items.AddRange(new string[] { "全部", "水温", "盐度", "溶氧", "pH", "氨氮" });
++            cbParam.SelectedIndex = 0;
++            cbParam.Location = new Point(190, 8);
++            cbParam.Size = new Size(80, 24);
++            cbParam.BackColor = AppTheme.BackgroundLight;
++            cbParam.ForeColor = AppTheme.TextPrimary;
++            cbParam.Font = AppTheme.SmallFont;
++            queryPanel.Controls.Add(cbParam);
++
++            var btnQuery = CreateActionButton("查询", AppTheme.AccentCyan);
++            btnQuery.Location = new Point(290, 6);
++            btnQuery.Size = new Size(70, 28);
++            queryPanel.Controls.Add(btnQuery);
++
++            var btnRefresh = CreateActionButton("刷新", AppTheme.PrimaryLight);
++            btnRefresh.Location = new Point(370, 6);
++            btnRefresh.Size = new Size(70, 28);
++            queryPanel.Controls.Add(btnRefresh);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 106);
++            dgv.Size = new Size(_mainContent.Width - 40, 340);
++            dgv.DataSource = DemoData.GetRealtimeQueryTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧
++            var sourceCard = AppTheme.CreateCard("数据来源", 256, 140);
++            sourceCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(sourceCard);
++
++            var sources = new string[] { "● 北斗卫星授时定位", "● 水下传感器阵列", "● 浮标气象站", "● 水质监测探头" };
++            for (int i = 0; i < sources.Length; i++)
++            {
++                var lbl = new Label();
++                lbl.Text = sources[i];
++                lbl.ForeColor = AppTheme.AccentGreen;
++                lbl.Font = AppTheme.SmallFont;
++                lbl.Location = new Point(16, 42 + i * 24);
++                lbl.AutoSize = true;
++                sourceCard.Controls.Add(lbl);
++            }
++        }
++
++        // ============================================================
++        // 模块6: 趋势图查询
++        // ============================================================
++        private void LoadTrendChart()
++        {
++            AddPageTitle("趋势图查询", "水质参数趋势分析与多维度数据对比");
++
++            // 查询条件
++            var queryPanel = new Panel();
++            queryPanel.Location = new Point(16, 58);
++            queryPanel.Size = new Size(_mainContent.Width - 40, 40);
++            queryPanel.BackColor = AppTheme.BackgroundCard;
++            _mainContent.Controls.Add(queryPanel);
++
++            var lblPool = new Label();
++            lblPool.Text = "池号: A1    日期: 2026-06-09    参数: 全部";
++            lblPool.ForeColor = AppTheme.TextSecondary;
++            lblPool.Font = AppTheme.ContentFont;
++            lblPool.Location = new Point(12, 12);
++            lblPool.AutoSize = true;
++            queryPanel.Controls.Add(lblPool);
++
++            // 水温趋势
++            var tempChart = AppTheme.CreateLineChart(
++                "水温趋势 (°C) - A1池",
++                DemoData.GetTrendTimeLabels(),
++                DemoData.GetTrendWaterTemp(),
++                _mainContent.Width - 40, 220);
++            tempChart.Location = new Point(16, 106);
++            _mainContent.Controls.Add(tempChart);
++
++            // 溶氧趋势
++            var oxygenChart = AppTheme.CreateLineChart(
++                "溶解氧趋势 (mg/L) - A1池",
++                DemoData.GetTrendTimeLabels(),
++                DemoData.GetTrendDissolvedOxygen(),
++                _mainContent.Width - 40, 220);
++            oxygenChart.Location = new Point(16, 340);
++            _mainContent.Controls.Add(oxygenChart);
++
++            // 右侧
++            var statCard = AppTheme.CreateCard("趋势统计", 256, 200);
++            statCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(statCard);
++
++            AppTheme.AddDataRow(statCard, "水温最高:", "24.5°C", 16, 45, AppTheme.AccentOrange);
++            AppTheme.AddDataRow(statCard, "水温最低:", "22.0°C", 16, 68, AppTheme.AccentCyan);
++            AppTheme.AddDataRow(statCard, "水温均值:", "23.26°C", 16, 91);
++            AppTheme.AddDataRow(statCard, "溶氧最高:", "7.8mg/L", 16, 114);
++            AppTheme.AddDataRow(statCard, "溶氧最低:", "6.5mg/L", 16, 137, AppTheme.AccentOrange);
++            AppTheme.AddDataRow(statCard, "趋势判断:", "正常波动", 16, 160, AppTheme.AccentGreen);
++        }
++
++        // ============================================================
++        // 模块7: 历史数据查询
++        // ============================================================
++        private void LoadHistoryQuery()
++        {
++            AddPageTitle("历史数据查询", "历史水质监测数据查询与导出");
++
++            // 查询条件
++            var queryPanel = new Panel();
++            queryPanel.Location = new Point(16, 58);
++            queryPanel.Size = new Size(_mainContent.Width - 40, 40);
++            queryPanel.BackColor = AppTheme.BackgroundCard;
++            _mainContent.Controls.Add(queryPanel);
++
++            var lblQ = new Label();
++            lblQ.Text = "池号: A1    起始: 2026-06-08 00:00    结束: 2026-06-09 23:59";
++            lblQ.ForeColor = AppTheme.TextSecondary;
++            lblQ.Font = AppTheme.ContentFont;
++            lblQ.Location = new Point(12, 12);
++            lblQ.AutoSize = true;
++            queryPanel.Controls.Add(lblQ);
++
++            var btnExport = CreateActionButton("导出Excel", AppTheme.AccentCyan);
++            btnExport.Location = new Point(queryPanel.Width - 180, 6);
++            btnExport.Size = new Size(80, 28);
++            queryPanel.Controls.Add(btnExport);
++
++            var btnPrint = CreateActionButton("打印报表", AppTheme.PrimaryLight);
++            btnPrint.Location = new Point(queryPanel.Width - 90, 6);
++            btnPrint.Size = new Size(80, 28);
++            queryPanel.Controls.Add(btnPrint);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 106);
++            dgv.Size = new Size(_mainContent.Width - 40, 400);
++            dgv.DataSource = DemoData.GetHistoryTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧
++            var summaryCard = AppTheme.CreateCard("查询统计", 256, 200);
++            summaryCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(summaryCard);
++
++            AppTheme.AddDataRow(summaryCard, "记录总数:", "48条", 16, 45);
++            AppTheme.AddDataRow(summaryCard, "时间跨度:", "48小时", 16, 68);
++            AppTheme.AddDataRow(summaryCard, "采样间隔:", "2小时", 16, 91);
++            AppTheme.AddDataRow(summaryCard, "异常记录:", "0条", 16, 114, AppTheme.AccentGreen);
++            AppTheme.AddDataRow(summaryCard, "数据完整性:", "100%", 16, 137, AppTheme.AccentGreen);
++        }
++
++        // ============================================================
++        // 模块8: 控制形式设置
++        // ============================================================
++        private void LoadControlMode()
++        {
++            AddPageTitle("控制形式设置", "养殖设备控制模式配置与运行状态管理");
++
++            // 操作按钮
++            var btnPanel = new Panel();
++            btnPanel.Location = new Point(16, 58);
++            btnPanel.Size = new Size(_mainContent.Width - 40, 36);
++            _mainContent.Controls.Add(btnPanel);
++
++            var btnBatch = CreateActionButton("批量设置", AppTheme.AccentCyan);
++            btnBatch.Location = new Point(0, 2);
++            btnPanel.Controls.Add(btnBatch);
++
++            var btnAuto = CreateActionButton("全部自动", AppTheme.AccentGreen);
++            btnAuto.Location = new Point(110, 2);
++            btnPanel.Controls.Add(btnAuto);
++
++            var btnManual = CreateActionButton("全部手动", AppTheme.AccentOrange);
++            btnManual.Location = new Point(220, 2);
++            btnPanel.Controls.Add(btnManual);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 100);
++            dgv.Size = new Size(_mainContent.Width - 40, 350);
++            dgv.DataSource = DemoData.GetControlModeTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧
++            var modeCard = AppTheme.CreateCard("控制模式说明", 256, 200);
++            modeCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(modeCard);
++
++            var modes = new string[] {
++                "自动模式:",
++                "  系统根据传感器数据",
++                "  自动调节设备运行",
++                "",
++                "手动模式:",
++                "  由操作员手动控制",
++                "  设备开关与功率",
++                "",
++                "定时模式:",
++                "  按预设时间计划",
++                "  自动执行任务"
++            };
++            for (int i = 0; i < modes.Length; i++)
++            {
++                var lbl = new Label();
++                lbl.Text = modes[i];
++                if (modes[i].EndsWith(":"))
++                    lbl.ForeColor = AppTheme.AccentCyan;
++                else
++                    lbl.ForeColor = AppTheme.TextMuted;
++                lbl.Font = AppTheme.SmallFont;
++                lbl.Location = new Point(16, 42 + i * 18);
++                lbl.AutoSize = true;
++                modeCard.Controls.Add(lbl);
++            }
++        }
++
++        // ============================================================
++        // 模块9: 控制时间设置
++        // ============================================================
++        private void LoadControlSchedule()
++        {
++            AddPageTitle("控制时间设置", "设备定时任务计划与执行周期管理");
++
++            // 操作按钮
++            var btnPanel = new Panel();
++            btnPanel.Location = new Point(16, 58);
++            btnPanel.Size = new Size(_mainContent.Width - 40, 36);
++            _mainContent.Controls.Add(btnPanel);
++
++            var btnNewTask = CreateActionButton("新建任务", AppTheme.AccentCyan);
++            btnNewTask.Location = new Point(0, 2);
++            btnPanel.Controls.Add(btnNewTask);
++
++            var btnEditTask = CreateActionButton("编辑任务", AppTheme.PrimaryLight);
++            btnEditTask.Location = new Point(110, 2);
++            btnPanel.Controls.Add(btnEditTask);
++
++            var btnEnableTask = CreateActionButton("启用/停用", AppTheme.AccentGreen);
++            btnEnableTask.Location = new Point(220, 2);
++            btnPanel.Controls.Add(btnEnableTask);
++
++            var dgv = CreateStyledDataGridView();
++            dgv.Location = new Point(16, 100);
++            dgv.Size = new Size(_mainContent.Width - 40, 350);
++            dgv.DataSource = DemoData.GetControlScheduleTable();
++            _mainContent.Controls.Add(dgv);
++
++            // 右侧
++            var todayCard = AppTheme.CreateCard("今日任务", 256, 200);
++            todayCard.Location = new Point(12, 55);
++            _rightPanel.Controls.Add(todayCard);
++
++            var todayTasks = new string[] {
++                "06:30  晨间投喂 ✓",
++                "08:00  水质采样 ✓",
++                "09:00  数据上报 ✓",
++                "11:30  午间投喂 ✓",
++                "14:30  水质采样 ○",
++                "17:30  晚间投喂 ○",
++                "18:00  夜间照明 ○"
++            };
++            for (int i = 0; i < todayTasks.Length; i++)
++            {
++                var lbl = new Label();
++                lbl.Text = todayTasks[i];
++                if (todayTasks[i].Contains("✓"))
++                    lbl.ForeColor = AppTheme.AccentGreen;
++                else
++                    lbl.ForeColor = AppTheme.TextSecondary;
++                lbl.Font = AppTheme.SmallFont;
++                lbl.Location = new Point(16, 42 + i * 22);
++                lbl.AutoSize = true;
++                todayCard.Controls.Add(lbl);
++            }
++        }
++
++        // ============================================================
++        // 公共UI辅助方法
++        // ============================================================
++
++        /// <summary>
++        /// 添加页面标题和描述
++        /// </summary>
++        private void AddPageTitle(string title, string description)
++        {
++            var lbl = new Label();
++            lbl.Text = title;
++            lbl.ForeColor = AppTheme.TextPrimary;
++            lbl.Font = AppTheme.SubTitleFont;
++            lbl.Location = new Point(16, 8);
++            lbl.AutoSize = true;
++            _mainContent.Controls.Add(lbl);
++
++            var desc = new Label();
++            desc.Text = description;
++            desc.ForeColor = AppTheme.TextMuted;
++            desc.Font = AppTheme.SmallFont;
++            desc.Location = new Point(16, 34);
++            desc.AutoSize = true;
++            _mainContent.Controls.Add(desc);
++        }
++
++        /// <summary>
++        /// 创建统计卡片
++        /// </summary>
++        private void AddStatCard(Panel parent, int index, string label, string value, string unit, Color valueColor)
++        {
++            int cardWidth = (parent.Width - 40) / 5;
++            var card = new Panel();
++            card.Location = new Point(index * (cardWidth + 8), 0);
++            card.Size = new Size(cardWidth, 70);
++            card.BackColor = AppTheme.BackgroundCard;
++            parent.Controls.Add(card);
++
++            var lbl = new Label();
++            lbl.Text = label;
++            lbl.ForeColor = AppTheme.TextMuted;
++            lbl.Font = AppTheme.SmallFont;
++            lbl.Location = new Point(12, 8);
++            lbl.AutoSize = true;
++            card.Controls.Add(lbl);
++
++            var val = new Label();
++            val.Text = value + (string.IsNullOrEmpty(unit) ? "" : " " + unit);
++            val.ForeColor = valueColor;
++            val.Font = new Font("Consolas", 14F, FontStyle.Bold);
++            val.Location = new Point(12, 30);
++            val.AutoSize = true;
++            card.Controls.Add(val);
++        }
++
++        /// <summary>
++        /// 创建统一样式DataGridView
++        /// </summary>
++        private DataGridView CreateStyledDataGridView()
++        {
++            var dgv = new DataGridView();
++            dgv.BackgroundColor = AppTheme.BackgroundCard;
++            dgv.BorderStyle = BorderStyle.None;
++            dgv.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
++            dgv.EnableHeadersVisualStyles = false;
++            dgv.ReadOnly = true;
++            dgv.AllowUserToAddRows = false;
++            dgv.AllowUserToDeleteRows = false;
++            dgv.AllowUserToResizeRows = false;
++            dgv.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
++            dgv.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
++            dgv.GridColor = AppTheme.BorderColor;
++            dgv.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
++
++            // 列头样式
++            dgv.ColumnHeadersDefaultCellStyle.BackColor = AppTheme.PrimaryMedium;
++            dgv.ColumnHeadersDefaultCellStyle.ForeColor = AppTheme.AccentCyan;
++            dgv.ColumnHeadersDefaultCellStyle.Font = AppTheme.ContentFont;
++            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
++            dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = AppTheme.PrimaryMedium;
++            dgv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
++            dgv.ColumnHeadersHeight = 32;
++
++            // 行样式
++            dgv.DefaultCellStyle.BackColor = AppTheme.BackgroundCard;
++            dgv.DefaultCellStyle.ForeColor = AppTheme.TextPrimary;
++            dgv.DefaultCellStyle.Font = AppTheme.ContentFont;
++            dgv.DefaultCellStyle.SelectionBackColor = AppTheme.PrimaryBlue;
++            dgv.DefaultCellStyle.SelectionForeColor = AppTheme.TextPrimary;
++            dgv.DefaultCellStyle.Padding = new Padding(4, 2, 4, 2);
++
++            // 交替行
++            dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(24, 42, 68);
++
++            // 行头
++            dgv.RowHeadersVisible = false;
++
++            return dgv;
++        }
++
++        /// <summary>
++        /// 创建操作按钮
++        /// </summary>
++        private Button CreateActionButton(string text, Color bgColor)
++        {
++            var btn = new Button();
++            btn.Text = text;
++            btn.Size = new Size(100, 30);
++            btn.BackColor = bgColor;
++            btn.ForeColor = AppTheme.TextPrimary;
++            btn.FlatStyle = FlatStyle.Flat;
++            btn.FlatAppearance.BorderSize = 0;
++            btn.Font = AppTheme.SmallFont;
++            btn.Cursor = Cursors.Hand;
++            return btn;
++        }
++    }
++}
+diff --git a/Program.cs b/Program.cs
+new file mode 100644
+index 0000000..c3ce406
+--- /dev/null
++++ b/Program.cs
+@@ -0,0 +1,16 @@
++using System;
++using System.Windows.Forms;
++
++namespace DeepSeaAquacultureTerminal
++{
++    static class Program
++    {
++        [STAThread]
++        static void Main()
++        {
++            Application.EnableVisualStyles();
++            Application.SetCompatibleTextRenderingDefault(false);
++            Application.Run(new MainForm());
++        }
++    }
++}
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..67229f7
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,76 @@
++# 基于北斗时空数据的深远海养殖辅助分析终端软件 V1.0
++
++## 简介
++
++本软件是一款基于北斗卫星导航系统的深远海养殖辅助分析桌面终端软件，用于养殖环境监测、数据分析与设备控制。
++
++## 功能模块
++
++| 序号 | 模块名称 | 说明 |
++|------|----------|------|
++| 1 | 养殖池整体监控 | 实时监测各养殖池环境参数与鱼群健康状态 |
++| 2 | 实时视频监控 | 养殖场视频监控实时画面与云台控制 |
++| 3 | 病虫防治 | 病害检测、风险评估与处理措施跟踪 |
++| 4 | 利润分析 | 各品种养殖成本、产出与利润率综合分析 |
++| 5 | 标准值设定 | 水质参数标准范围与告警阈值配置 |
++| 6 | 数据实时查询 | 传感器实时采集数据与北斗时空数据查询 |
++| 7 | 趋势图查询 | 水质参数趋势分析与多维度数据对比 |
++| 8 | 历史数据查询 | 历史水质监测数据查询与导出 |
++| 9 | 控制形式设置 | 养殖设备控制模式配置与运行状态管理 |
++| 10 | 控制时间设置 | 设备定时任务计划与执行周期管理 |
++
++## 技术栈
++
++- **语言**: C# (.NET Framework 4.x)
++- **UI框架**: Windows Forms
++- **编译器**: Windows 自带 `csc.exe`
++- **依赖**: 仅 System.Windows.Forms / System.Drawing / System.Data，无外部依赖
++
++## 项目结构
++
++```
++├── Program.cs          # 程序入口
++├── MainForm.cs         # 主界面及10个业务模块界面
++├── AppTheme.cs         # 主题配色方案
++├── DemoData.cs         # 演示业务数据
++├── build.ps1           # 编译脚本
++├── README.md           # 本文件
++├── bin/                # 编译输出目录
++│   └── DeepSeaAquacultureTerminal.exe
++└── .ai/                # 任务文件
++```
++
++## 编译与运行
++
++### 编译
++
++```powershell
++.\build.ps1
++```
++
++### 运行
++
++```powershell
++.\bin\DeepSeaAquacultureTerminal.exe
++```
++
++或双击 `bin\DeepSeaAquacultureTerminal.exe`。
++
++## 运行环境
++
++- Windows 10 / Windows 11
++- .NET Framework 4.x（Windows 系统自带，无需额外安装）
++- 推荐分辨率：1440×900 或更高
++
++## 界面说明
++
++- **顶部栏**: 软件标题、北斗授时时间、系统状态
++- **左侧导航**: 10个功能模块切换按钮
++- **主内容区**: 当前选中模块的数据展示区
++- **右侧面板**: 当前模块的详情信息或辅助操作
++
++## 软著信息
++
++- 软件名称: 基于北斗时空数据的深远海养殖辅助分析终端软件
++- 版本号: V1.0
++- 开发语言: C#
+diff --git a/build.ps1 b/build.ps1
+new file mode 100644
+index 0000000..981b115
+--- /dev/null
++++ b/build.ps1
+@@ -0,0 +1,50 @@
++﻿# 编译脚本 - 基于北斗时空数据的深远海养殖辅助分析终端软件
++# 使用 Windows 自带 .NET Framework 4.x 编译器
++
++$csc = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
++
++if (-not (Test-Path $csc)) {
++    $csc = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe"
++}
++
++if (-not (Test-Path $csc)) {
++    Write-Host "错误: 未找到 csc.exe 编译器，请确认已安装 .NET Framework 4.x" -ForegroundColor Red
++    exit 1
++}
++
++Write-Host "使用编译器: $csc" -ForegroundColor Cyan
++
++# 创建输出目录
++if (-not (Test-Path "bin")) {
++    New-Item -ItemType Directory -Path "bin" | Out-Null
++}
++
++# 编译
++$sourceFiles = @(
++    "Program.cs",
++    "MainForm.cs",
++    "AppTheme.cs",
++    "DemoData.cs"
++)
++
++$references = @(
++    "/r:System.dll",
++    "/r:System.Data.dll",
++    "/r:System.Drawing.dll",
++    "/r:System.Windows.Forms.dll"
++)
++
++$output = "bin\DeepSeaAquacultureTerminal.exe"
++
++Write-Host "正在编译..." -ForegroundColor Yellow
++
++& $csc /nologo /target:winexe /out:$output $references /platform:x64 $sourceFiles
++
++if ($LASTEXITCODE -eq 0) {
++    Write-Host "编译成功!" -ForegroundColor Green
++    Write-Host "输出文件: $output" -ForegroundColor Cyan
++    Write-Host "文件大小: $((Get-Item $output).Length / 1KB) KB" -ForegroundColor Cyan
++} else {
++    Write-Host "编译失败，请检查错误信息。" -ForegroundColor Red
++    exit 1
++}
